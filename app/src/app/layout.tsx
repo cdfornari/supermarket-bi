@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Montserrat } from 'next/font/google';
 import { ProviderWrapper } from '../../components/providers/provider-wrapper';
+import { TabContainer } from '../../components/ui/TabContainer';
+import { classNames } from '../../utils/classNames';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'] });
+const montserrat = Montserrat({ weight: 'variable', subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'Create Next App',
@@ -16,9 +18,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <ProviderWrapper>{children}</ProviderWrapper>
+    <html lang="en" className="h-screen">
+      <body
+        className={classNames(
+          montserrat,
+          'dark h-full text-foreground bg-background'
+        )}
+      >
+        <ProviderWrapper>
+          <TabContainer />
+          <main className="flex h-full flex-col items-center justify-between p-24">
+            {children}
+          </main>
+        </ProviderWrapper>
       </body>
     </html>
   );
