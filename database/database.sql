@@ -1,12 +1,3 @@
--- ------------------------------------------------
--- -- !Función que permite generar UUID (ID Unicos)
--- ------------------------------------------------
--- CREATE FUNCTION uuid_generate_v4()
---  RETURNS uuid
---  LANGUAGE c
---  PARALLEL SAFE STRICT
--- AS '$libdir/uuid-ossp', $function$uuid_generate_v4$function$;
-
 ------------------------------------------------
 -- * Creación de tablas sin Foreign Keys
 ------------------------------------------------
@@ -20,12 +11,12 @@ CREATE TABLE IF NOT EXISTS "Rol" (
 
 -- *Tabla de Empleados
 CREATE TABLE IF NOT EXISTS "Employee" (
-    "ci" numeric(10,0) NOT NULL,
+    "ci" varchar(256) NOT NULL,
     "first_name" varchar(256) NOT NULL,
     "middle_name" varchar(256),
     "last_name" varchar(256) NOT NULL,
     "family_name" varchar(256) NOT NULL,
-    "phone_number" varchar2 NOT NULL,
+    "phone_number" varchar(256) NOT NULL,
     "email" varchar(256) NOT NULL UNIQUE,
     "address" varchar(256) NOT NULL,
     PRIMARY KEY("ci"),
@@ -54,7 +45,7 @@ CREATE TABLE IF NOT EXISTS "Supplier" (
 
 -- *Tabla de Clientes
 CREATE TABLE IF NOT EXISTS "Client" (
-    "ci" numeric(10,0) NOT NULL,
+    "ci" varchar(256) NOT NULL,
     "first_name" varchar(256) NOT NULL,
     "middle_name" varchar(256),
     "last_name" varchar(256) NOT NULL,
@@ -90,16 +81,16 @@ CREATE TABLE IF NOT EXISTS "EmployeeHistory"(
     "date_end" date,
     "salary" numeric(10,2) NOT NULL,
     "role" uuid NOT NULL,
-    "ci_employee" numeric(10,0) NOT NULL,
+    "ci_employee" varchar(256) NOT NULL,
     "branchId" uuid NOT NULL,
     PRIMARY KEY("date_start"),
     CONSTRAINT "fk_employee" FOREIGN KEY ("ci_employee") REFERENCES "Employee"("ci"),
     CONSTRAINT "fk_rol" FOREIGN KEY ("role") REFERENCES "Rol"("id"),
     CONSTRAINT "fk_branch" FOREIGN KEY ("branchId") REFERENCES "Branch"("id")
-)
+);
 
 -- *Tabla de Ausencia de Empleado
-CREATE TABLE IF NOT EXIST "Absence" (
+CREATE TABLE IF NOT EXISTS "Absence" (
     "date" date NOT NULL,
     "justified" varchar(256) NOT NULL,
     "date_start" date NOT NULL,
@@ -135,7 +126,7 @@ CREATE TABLE IF NOT EXISTS "PriceHistory" (
     "productId" uuid NOT NULL,
     PRIMARY KEY("date"),
     CONSTRAINT "fk_product" FOREIGN KEY ("productId") REFERENCES "Product"("id")
-)
+);
 
 -- *Tabla de Ordenes
 CREATE TABLE IF NOT EXISTS "Order" (
@@ -144,7 +135,7 @@ CREATE TABLE IF NOT EXISTS "Order" (
     "total" numeric(10,2) NOT NULL,
     "taxes" numeric(10,2) NOT NULL,
     "discount" numeric(10,2) NOT NULL,
-    "client" numeric(10,0) NOT NULL,
+    "client" varchar(256) NOT NULL,
     "branch" uuid NOT NULL,
     PRIMARY KEY("id"),
     CONSTRAINT "fk_client" FOREIGN KEY ("client") REFERENCES "Client"("ci"),
