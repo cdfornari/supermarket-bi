@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS "Employee" (
     "email" varchar(256) NOT NULL UNIQUE,
     "address" varchar(256) NOT NULL,
     "gender" varchar(2) NOT NULL,
-    PRIMARY KEY("id"),
+    PRIMARY KEY("id")
     -- CONSTRAINT "chk_gender" CHECK (gender IN ('M', 'F')),
     -- CONSTRAINT "chk_email" CHECK (email ~* '^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$')
 );
@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS "Client" (
     "email" varchar(256) NOT NULL,
     "address" varchar(256) NOT NULL,
     "gender" varchar(2) NOT NULL,
-    PRIMARY KEY("id"),
+    PRIMARY KEY("id")
     -- CONSTRAINT "chk_email" CHECK (email ~* '^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$'),
     -- CONSTRAINT "chk_gender" CHECK (gender IN ('M', 'F'))
 );
@@ -85,10 +85,10 @@ CREATE TABLE IF NOT EXISTS "EmployeeHistory"(
     "date_end" date,
     "salary" numeric(10,2) NOT NULL,
     "role" uuid NOT NULL,
-    "ci_employee" varchar(256) NOT NULL,
+    "employeeId" uuid NOT NULL,
     "branchId" uuid NOT NULL,
     PRIMARY KEY("date_start"),
-    CONSTRAINT "fk_employee" FOREIGN KEY ("ci_employee") REFERENCES "Employee"("ci"),
+    CONSTRAINT "fk_employee" FOREIGN KEY ("employeeId") REFERENCES "Employee"("id"),
     CONSTRAINT "fk_rol" FOREIGN KEY ("role") REFERENCES "Rol"("id"),
     CONSTRAINT "fk_branch" FOREIGN KEY ("branchId") REFERENCES "Branch"("id")
 );
@@ -133,10 +133,10 @@ CREATE TABLE IF NOT EXISTS "Order" (
     "taxes" numeric(10,2) NOT NULL,
     "discount" numeric(10,2) NOT NULL,
     "subtotal" numeric(10,2) NOT NULL,
-    "client" varchar(256) NOT NULL,
+    "clientId" uuid NOT NULL,
     "branch" uuid NOT NULL,
     PRIMARY KEY("id"),
-    CONSTRAINT "fk_client" FOREIGN KEY ("client") REFERENCES "Client"("ci"),
+    CONSTRAINT "fk_client" FOREIGN KEY ("clientId") REFERENCES "Client"("id"),
     CONSTRAINT "fk_branch" FOREIGN KEY ("branch") REFERENCES "Branch"("id")
 );
 
