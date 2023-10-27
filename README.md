@@ -26,7 +26,17 @@ Proyecto #1 para Tópicos Especiales de Gestión de Datos, hecho por:
   cd supermarket-reports
 ```
 
-### 3. Install dependencies to the server
+### 3. Install dependencies to the client
+```bash
+  cd app && npm install
+```
+
+## 4. For this step you need to have docker installed. If you don't have it, you can install it from [here](https://docs.docker.com/get-docker/). This step is to run the database.
+```bash
+  npm run db
+```
+
+### 5. Run the client.
 ```bash
   npm start
 ```
