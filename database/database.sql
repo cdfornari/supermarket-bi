@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS "Rol" (
 
 -- *Tabla de Empleados
 CREATE TABLE IF NOT EXISTS "Employee" (
+    "id" uuid NOT NULL DEFAULT gen_random_uuid(),
     "ci" varchar(256) NOT NULL,
     "first_name" varchar(256) NOT NULL,
     "middle_name" varchar(256),
@@ -19,8 +20,10 @@ CREATE TABLE IF NOT EXISTS "Employee" (
     "phone_number" varchar(256) NOT NULL,
     "email" varchar(256) NOT NULL UNIQUE,
     "address" varchar(256) NOT NULL,
-    PRIMARY KEY("ci"),
-    CONSTRAINT "chk_email" CHECK (email ~* '^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$')
+    "gender" varchar(2) NOT NULL,
+    PRIMARY KEY("id"),
+    -- CONSTRAINT "chk_gender" CHECK (gender IN ('M', 'F')),
+    -- CONSTRAINT "chk_email" CHECK (email ~* '^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$')
 );
 
 -- *Tabla de Categoría de productos
@@ -45,6 +48,7 @@ CREATE TABLE IF NOT EXISTS "Supplier" (
 
 -- *Tabla de Clientes
 CREATE TABLE IF NOT EXISTS "Client" (
+    "id" uuid NOT NULL DEFAULT gen_random_uuid(),
     "ci" varchar(256) NOT NULL,
     "first_name" varchar(256) NOT NULL,
     "middle_name" varchar(256),
@@ -54,9 +58,9 @@ CREATE TABLE IF NOT EXISTS "Client" (
     "email" varchar(256) NOT NULL,
     "address" varchar(256) NOT NULL,
     "gender" varchar(2) NOT NULL,
-    PRIMARY KEY("ci"),
-    CONSTRAINT "chk_email" CHECK (email ~* '^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$'),
-    CONSTRAINT "chk_gender" CHECK (gender IN ('M', 'F'))
+    PRIMARY KEY("id"),
+    -- CONSTRAINT "chk_email" CHECK (email ~* '^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$'),
+    -- CONSTRAINT "chk_gender" CHECK (gender IN ('M', 'F'))
 );
 
 -- *Tabla de Sucursales
@@ -114,18 +118,11 @@ CREATE TABLE IF NOT EXISTS "Product" (
     "id" uuid NOT NULL DEFAULT gen_random_uuid(),
     "name" varchar(256) NOT NULL,
     "description" varchar(256) NOT NULL,
+    "price" numeric(10,2) NOT NULL,
     "category" uuid NOT NULL,
     PRIMARY KEY("id"),
+    CONSTRAINT "chk_price" CHECK (price > 0),
     CONSTRAINT "fk_category" FOREIGN KEY ("category") REFERENCES "Category"("id")
-);
-
--- *Tabla de precio Historico
-CREATE TABLE IF NOT EXISTS "PriceHistory" (
-    "date" date NOT NULL,
-    "price" numeric(10,2) NOT NULL,
-    "productId" uuid NOT NULL,
-    PRIMARY KEY("date"),
-    CONSTRAINT "fk_product" FOREIGN KEY ("productId") REFERENCES "Product"("id")
 );
 
 -- *Tabla de Ordenes
@@ -135,6 +132,7 @@ CREATE TABLE IF NOT EXISTS "Order" (
     "total" numeric(10,2) NOT NULL,
     "taxes" numeric(10,2) NOT NULL,
     "discount" numeric(10,2) NOT NULL,
+    "subtotal" numeric(10,2) NOT NULL,
     "client" varchar(256) NOT NULL,
     "branch" uuid NOT NULL,
     PRIMARY KEY("id"),
@@ -147,7 +145,6 @@ CREATE TABLE IF NOT EXISTS "OrderProduct" (
     "order" uuid NOT NULL,
     "product" uuid NOT NULL,
     "quantity" numeric(10,0) NOT NULL,
-    "discount" numeric(10,2) NOT NULL,
     PRIMARY KEY("order", "product"),
     CONSTRAINT "chk_quantity" CHECK (quantity > 0),
     CONSTRAINT "fk_order" FOREIGN KEY ("order") REFERENCES "Order"("id"),
