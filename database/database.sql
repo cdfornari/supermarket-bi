@@ -1,3 +1,7 @@
+-------------------------------------------
+-- * Creación de tipos de datos abstractos (TDA)
+-------------------------------------------
+
 CREATE TYPE "PersonData" AS (
     "ci" varchar(256),
     "first_name" varchar(256),
@@ -9,6 +13,10 @@ CREATE TYPE "PersonData" AS (
     "address" varchar(256),
     "gender" varchar(2)
 );
+
+-------------------------------------------
+-- * Creación de tablas sin Foreign Keys
+-------------------------------------------
 
 -- *Tabla de Clientes
 CREATE TABLE IF NOT EXISTS "Client" (
@@ -117,7 +125,6 @@ CREATE TABLE IF NOT EXISTS "Product" (
 CREATE TABLE IF NOT EXISTS "Order" (
     "id" uuid NOT NULL DEFAULT gen_random_uuid(),
     "date" date NOT NULL,
-    "total" numeric(10,2) NOT NULL,
     "taxes" numeric(10,2) NOT NULL,
     "discount" numeric(10,2) NOT NULL,
     "subtotal" numeric(10,2) NOT NULL,
@@ -130,13 +137,13 @@ CREATE TABLE IF NOT EXISTS "Order" (
 
 -- *Tabla de Ordenes de Productos
 CREATE TABLE IF NOT EXISTS "OrderProduct" (
-    "order" uuid NOT NULL,
-    "product" uuid NOT NULL,
+    "orderId" uuid NOT NULL,
+    "productId" uuid NOT NULL,
     "quantity" numeric(10,0) NOT NULL,
-    PRIMARY KEY("order", "product"),
+    PRIMARY KEY("orderId", "productId"),
     CONSTRAINT "chk_quantity" CHECK (quantity > 0),
-    CONSTRAINT "fk_order" FOREIGN KEY ("order") REFERENCES "Order"("id"),
-    CONSTRAINT "fk_product" FOREIGN KEY ("product") REFERENCES "Product"("id")
+    CONSTRAINT "fk_order" FOREIGN KEY ("orderId") REFERENCES "Order"("id"),
+    CONSTRAINT "fk_product" FOREIGN KEY ("productId") REFERENCES "Product"("id")
 );
 
 -- *Tabla de Compra por lotes
@@ -190,7 +197,6 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE plpgsql;
-
 
 -- * Validación de email
 CREATE OR REPLACE FUNCTION validate_email(email varchar(256)) RETURNS varchar(256) AS $$
@@ -273,7 +279,6 @@ BEGIN
 	END IF;
 END;
 $$ LANGUAGE plpgsql;
-
 
 -- Ejemplo de la llamada al procedure
 -- CALL create_person(
