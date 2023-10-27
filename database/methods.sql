@@ -41,7 +41,7 @@ BEGIN
     IF phone ~* '^\+\d{1,3}\s?\d{1,14}$' THEN
         RETURN phone;
     ELSE
-        RAISE EXCEPTION 'ERROR género no especificado';
+        RAISE EXCEPTION 'ERROR teléfono no especificado';
     END IF;
 END;
 $$ LANGUAGE plpgsql;
