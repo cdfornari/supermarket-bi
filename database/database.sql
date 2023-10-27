@@ -226,7 +226,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- *Crear persona
-CREATE OR REPLACE PROCEDURE create_persona(
+CREATE OR REPLACE PROCEDURE create_person(
     ci varchar(256),
     first_name varchar(256),
     middle_name varchar(256),
@@ -276,7 +276,7 @@ $$ LANGUAGE plpgsql;
 
 
 -- Ejemplo de la llamada al procedure
--- CALL create_persona(
+-- CALL create_person(
 -- 	'V-1000',
 -- 	'Juan',
 -- 	'Carlos',
