@@ -31,12 +31,30 @@ Proyecto #1 para Tópicos Especiales de Gestión de Datos, hecho por:
   cd app && npm install
 ```
 
-## 4. For this step you need to have docker installed. If you don't have it, you can install it from [here](https://docs.docker.com/get-docker/). This step is to run the database.
+### 4. From this step you need to have docker installed. If you don't have it, you can install it from [here](https://docs.docker.com/get-docker/). This step is to run the database.
 ```bash
   npm run db
 ```
 
-### 5. Run the client.
+### 5. Run the seed to populate the database
+```bash
+  npm run dbseed
+```
+
+### 6. Run the client.
 ```bash
   npm start
 ```
+
+## Other Scripts (Optional)
+
+### Drop the database. This script drops the database.
+```bash
+  npm run dbdrop
+```
+
+### Reset the database. This script drops the database and then runs the seed again.
+```bash
+  npm run dbreset
+```
+

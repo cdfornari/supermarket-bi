@@ -6,10 +6,10 @@
   "scripts": {
     "start": "cd app && npm run dev & cd ..",
     "db": "cd database && docker-compose up -d && cd ..",
-    "dbseed": "cd database && docker-compose exec db psql -U postgres -d samba_escolas -f seed.sql && cd ..",
+    "dbseed": "cd database && docker-compose exec db psql -U postgres -d supermarket -f seed.sql && cd ..",
     "dropdb": "cd database && docker-compose down -v && cd ..",
     "resetdb": "cd database && docker-compose down -v && docker-compose up -d && cd .."
   },
-  "author": "Carlos Fornari",
+  "author": "Dream Team",
   "license": "ISC"
 }
