@@ -1,29 +1,34 @@
-------------------------------------------------
--- * Creación de tablas sin Foreign Keys
-------------------------------------------------
+CREATE TYPE "PersonData" AS (
+    "ci" varchar(256),
+    "first_name" varchar(256),
+    "middle_name" varchar(256),
+    "last_name" varchar(256),
+    "family_name" varchar(256),
+    "phone_number" varchar(256),
+    "email" varchar(256),
+    "address" varchar(256),
+    "gender" varchar(2)
+);
 
--- *Tabla de roles
-CREATE TABLE IF NOT EXISTS "Rol" (
+-- *Tabla de Clientes
+CREATE TABLE IF NOT EXISTS "Client" (
     "id" uuid NOT NULL DEFAULT gen_random_uuid(),
-    "description" varchar(256) NOT NULL,
+    "data" "PersonData" NOT NULL,
     PRIMARY KEY("id")
 );
 
 -- *Tabla de Empleados
 CREATE TABLE IF NOT EXISTS "Employee" (
     "id" uuid NOT NULL DEFAULT gen_random_uuid(),
-    "ci" varchar(256) NOT NULL,
-    "first_name" varchar(256) NOT NULL,
-    "middle_name" varchar(256),
-    "last_name" varchar(256) NOT NULL,
-    "family_name" varchar(256) NOT NULL,
-    "phone_number" varchar(256) NOT NULL,
-    "email" varchar(256) NOT NULL UNIQUE,
-    "address" varchar(256) NOT NULL,
-    "gender" varchar(2) NOT NULL,
+    "data" "PersonData" NOT NULL,
     PRIMARY KEY("id")
-    -- CONSTRAINT "chk_gender" CHECK (gender IN ('M', 'F')),
-    -- CONSTRAINT "chk_email" CHECK (email ~* '^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$')
+);
+
+-- *Tabla de roles
+CREATE TABLE IF NOT EXISTS "Rol" (
+    "id" uuid NOT NULL DEFAULT gen_random_uuid(),
+    "description" varchar(256) NOT NULL,
+    PRIMARY KEY("id")
 );
 
 -- *Tabla de Categoría de productos
@@ -44,23 +49,6 @@ CREATE TABLE IF NOT EXISTS "Supplier" (
     "sector" varchar(256) NOT NULL,
     PRIMARY KEY("id"),
     CONSTRAINT "chk_email" CHECK (email ~* '^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$')
-);
-
--- *Tabla de Clientes
-CREATE TABLE IF NOT EXISTS "Client" (
-    "id" uuid NOT NULL DEFAULT gen_random_uuid(),
-    "ci" varchar(256) NOT NULL,
-    "first_name" varchar(256) NOT NULL,
-    "middle_name" varchar(256),
-    "last_name" varchar(256) NOT NULL,
-    "family_name" varchar(256) NOT NULL,
-    "phone_number" varchar(256) NOT NULL,
-    "email" varchar(256) NOT NULL,
-    "address" varchar(256) NOT NULL,
-    "gender" varchar(2) NOT NULL,
-    PRIMARY KEY("id")
-    -- CONSTRAINT "chk_email" CHECK (email ~* '^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$'),
-    -- CONSTRAINT "chk_gender" CHECK (gender IN ('M', 'F'))
 );
 
 -- *Tabla de Sucursales
