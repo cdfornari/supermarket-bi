@@ -293,3 +293,77 @@ $$ LANGUAGE plpgsql;
 -- 	'M',
 -- 	'Employee'
 -- )
+
+-------------------------------------------
+-- * Creación de los reportes
+-------------------------------------------
+
+-- * Reporte de Productos más populares y menos populares
+-- ? Filtros: fecha de inicio, fecha de fin - Categoria
+
+CREATE OR REPLACE FUNCTION reportProductsByPopularity(
+    sortOrder BOOLEAN, -- True para ordenar de mayor a menor, False para ordenar de menor a mayor
+    categoryFilter varchar(256) DEFAULT NULL,
+    start_date date DEFAULT NULL,
+    end_date date DEFAULT NULL
+) RETURNS TABLE (
+    "product_name" varchar(256),
+    "product_description" varchar(256),
+    "product_price" numeric(10,2),
+    "product_category" varchar(256),
+    "product_quantity" numeric(10,0)
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT "Product".name, "Product".description, "Product".price, "Category".name, SUM("OrderProduct".quantity)
+    FROM "Product" 
+        JOIN "OrderProduct" ON "Product".id = "OrderProduct"."productId"
+        JOIN "Category" ON "Product".category = "Category".id
+        JOIN "Order" ON "OrderProduct"."orderId" = "Order".id
+    WHERE 
+        (start_date IS NULL OR end_date IS NULL OR "Order".date BETWEEN start_date AND end_date) 
+        AND
+        (categoryFilter IS NULL OR "Category".name = categoryFilter)
+    GROUP BY "Product".id, "Category".id
+    ORDER BY 
+        CASE WHEN popularity THEN SUM("OrderProduct".quantity) END DESC, 
+        CASE WHEN NOT popularity THEN SUM("OrderProduct".quantity) END ASC;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ? Ejemplo de la llamada al reporte
+-- ? SELECT * FROM reportProductsByPopularity(TRUE, NULL, '2020-01-01', '2020-12-31');
+
+-- * Reporte de Sucursales con mayores beneficios y menores beneficios
+-- ? Filtros: fecha de inicio, fecha de fin, escoger sucursal.
+
+CREATE OR REPLACE FUNCTION reportBranchesByBenefits(
+    sortOrder BOOLEAN, -- True para ordenar de mayor a menor, False para ordenar de menor a mayor
+    branchFilter varchar(256) DEFAULT NULL,
+    start_date date DEFAULT NULL,
+    end_date date DEFAULT NULL
+) RETURNS TABLE (
+    "branch_address_line_1" varchar(256),
+    "branch_municipalty" varchar(256),
+    "branch_city" varchar(256),
+    "branch_mensual_cost" numeric(10,2),
+    "branch_benefits" numeric(10,2)
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT "Branch".address_line_1, "Branch".municipalty, "Branch".city, "Branch".mensual_cost, SUM("Order".subtotal - "Order".discount) as benefits
+    FROM "Branch" 
+        JOIN "Order" ON "Branch".id = "Order".branch
+    WHERE 
+        (start_date IS NULL OR end_date IS NULL OR "Order".date BETWEEN start_date AND end_date) 
+        AND
+        (branchFilter IS NULL OR "Branch".address_line_1 = branchFilter)
+    GROUP BY "Branch".id
+    ORDER BY 
+        CASE WHEN sortOrder THEN SUM("Order".subtotal - "Order".discount) END DESC, 
+        CASE WHEN NOT sortOrder THEN SUM("Order".subtotal - "Order".discount) END ASC;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ? Ejemplo de la llamada al reporte
+-- ? SELECT * FROM reportBranchesByBenefits(TRUE, NULL, '2010-01-01', '2023-12-31');
