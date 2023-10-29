@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS "EmployeeHistory"(
     "role" uuid NOT NULL,
     "employeeId" uuid NOT NULL,
     "branchId" uuid NOT NULL,
-    PRIMARY KEY("date_start"),
+    PRIMARY KEY("date_start", "employeeId"),
     CONSTRAINT "fk_employee" FOREIGN KEY ("employeeId") REFERENCES "Employee"("id"),
     CONSTRAINT "fk_rol" FOREIGN KEY ("role") REFERENCES "Rol"("id"),
     CONSTRAINT "fk_branch" FOREIGN KEY ("branchId") REFERENCES "Branch"("id")
@@ -91,11 +91,13 @@ CREATE TABLE IF NOT EXISTS "EmployeeHistory"(
 
 -- *Tabla de Ausencia de Empleado
 CREATE TABLE IF NOT EXISTS "Absence" (
-    "date" date NOT NULL,
+    "startAbsence" date NOT NULL,
+    "endAbsence" date NOT NULL,
     "justified" varchar(256) NOT NULL,
-    "date_start" date NOT NULL,
-    PRIMARY KEY("date"),
-    CONSTRAINT "fk_employeeHistory" FOREIGN KEY ("date_start") REFERENCES "EmployeeHistory"("date_start")
+    "startEmployee" date NOT NULL,
+    "employeeId" uuid NOT NULL,
+    PRIMARY KEY("startAbsence", "employeeId", "startEmployee"),
+    CONSTRAINT "fk_employeeHistory" FOREIGN KEY ("startEmployee", "employeeId") REFERENCES "EmployeeHistory"("date_start", "employeeId")
 );
 
 -- *Tabla de Costo Extra
@@ -303,6 +305,7 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION reportProductsByPopularity(
     sortOrder BOOLEAN, -- True para ordenar de mayor a menor, False para ordenar de menor a mayor
+    limitFilter INTEGER DEFAULT NULL,
     categoryFilter varchar(256) DEFAULT NULL,
     start_date date DEFAULT NULL,
     end_date date DEFAULT NULL
@@ -327,18 +330,20 @@ BEGIN
     GROUP BY "Product".id, "Category".id
     ORDER BY 
         CASE WHEN sortOrder THEN SUM("OrderProduct".quantity) END DESC, 
-        CASE WHEN NOT sortOrder THEN SUM("OrderProduct".quantity) END ASC;
+        CASE WHEN NOT sortOrder THEN SUM("OrderProduct".quantity) END ASC
+    LIMIT CASE WHEN limitFilter IS NOT NULL THEN limitFilter END;
 END;
 $$ LANGUAGE plpgsql;
 
 -- ? Ejemplo de la llamada al reporte
--- ? SELECT * FROM reportProductsByPopularity(TRUE, NULL, '2020-01-01', '2020-12-31');
+-- ? SELECT * FROM reportProductsByPopularity(TRUE, 10, NULL, '2020-01-01', '2020-12-31');
 
 -- * Reporte de Sucursales con mayores beneficios y menores beneficios
 -- ? Filtros: fecha de inicio, fecha de fin, escoger sucursal.
 
 CREATE OR REPLACE FUNCTION reportBranchesByBenefits(
     sortOrder BOOLEAN, -- True para ordenar de mayor a menor, False para ordenar de menor a mayor
+    limitFilter INTEGER DEFAULT NULL,
     branchFilter varchar(256) DEFAULT NULL,
     start_date date DEFAULT NULL,
     end_date date DEFAULT NULL
@@ -361,9 +366,10 @@ BEGIN
     GROUP BY "Branch".id
     ORDER BY 
         CASE WHEN sortOrder THEN SUM("Order".subtotal - "Order".discount) END DESC, 
-        CASE WHEN NOT sortOrder THEN SUM("Order".subtotal - "Order".discount) END ASC;
+        CASE WHEN NOT sortOrder THEN SUM("Order".subtotal - "Order".discount) END ASC
+    LIMIT CASE WHEN limitFilter IS NOT NULL THEN limitFilter END;
 END;
 $$ LANGUAGE plpgsql;
 
 -- ? Ejemplo de la llamada al reporte
--- ? SELECT * FROM reportBranchesByBenefits(TRUE, NULL, '2010-01-01', '2023-12-31');
+-- ? SELECT * FROM reportBranchesByBenefits(TRUE, 10, NULL, '2010-01-01', '2023-12-31');
