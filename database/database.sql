@@ -326,8 +326,8 @@ BEGIN
         (categoryFilter IS NULL OR "Category".name = categoryFilter)
     GROUP BY "Product".id, "Category".id
     ORDER BY 
-        CASE WHEN popularity THEN SUM("OrderProduct".quantity) END DESC, 
-        CASE WHEN NOT popularity THEN SUM("OrderProduct".quantity) END ASC;
+        CASE WHEN sortOrder THEN SUM("OrderProduct".quantity) END DESC, 
+        CASE WHEN NOT sortOrder THEN SUM("OrderProduct".quantity) END ASC;
 END;
 $$ LANGUAGE plpgsql;
 
