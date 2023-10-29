@@ -1,13 +1,15 @@
 import { pool } from "../../../../utils/database";
 
-export async function GET(req: Request) {
-    const { searchParams } = new URL(req.url);
+interface RequestBody {
+    sortOrder: boolean;
+    date_start: string | null;
+    date_end: string | null;
+    categoryFilter: string | null;
+}
 
-    const sortOrder: string | null = searchParams.get('sortOrder');
-    const date_start: string | null = searchParams.get('date_start');
-    const date_end: string | null = searchParams.get('date_end');
-    const categoryFilter: string | null = searchParams.get('categoryFilter');
-
+export async function POST(req: Request) {
+    const { sortOrder, date_start, date_end, categoryFilter }: RequestBody = await req.json();
+    console.log(sortOrder, date_start, date_end, categoryFilter);
     const result = await pool.query(
         `SELECT * 
         FROM 
@@ -15,6 +17,4 @@ export async function GET(req: Request) {
         `
     );
     return Response.json(result.rows);
-
-    // Nota: los datos string deben mandarse entre comillas simples ('dato')
 }
