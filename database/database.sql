@@ -296,6 +296,26 @@ $$ LANGUAGE plpgsql;
 -- 	'Employee'
 -- )
 
+-----------------------------------------------------------
+-- * Funciones para agilizar las consultas de los reportes
+-----------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION getPlaceType(
+    place varchar(256)
+) RETURNS varchar(256) AS $$
+BEGIN
+    IF EXISTS (SELECT DISTINCT "Branch".address_line_1 FROM "Branch" WHERE UPPER("Branch".address_line_1) = UPPER(place)) THEN
+        RETURN 'ADDRESS';  
+    ELSIF EXISTS (SELECT DISTINCT "Branch".city FROM "Branch" WHERE UPPER("Branch".city) = UPPER(place)) THEN
+        RETURN 'CITY';
+    ELSIF EXISTS (SELECT DISTINCT "Branch".municipalty FROM "Branch" WHERE UPPER("Branch".municipalty) = UPPER(place)) THEN
+        RETURN 'MUNICIPALTY';
+    ELSE
+        RETURN NULL;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
 -------------------------------------------
 -- * Creación de los reportes
 -------------------------------------------
@@ -374,9 +394,99 @@ $$ LANGUAGE plpgsql;
 -- ? Ejemplo de la llamada al reporte
 -- ? SELECT * FROM reportBranchesByBenefits(TRUE, 10, NULL, '2010-01-01', '2023-12-31');
 
+-- * Reporte: Empleado con más o menos inasistencias
+-- ? Filtros: escoger local, empleados (activos, inactivos u ambos), fecha inicio y fin de la inasistencia, rol
+
+CREATE OR REPLACE FUNCTION employeeMoreAbsences(
+    sortOrder BOOLEAN,
+    limitFilter INTEGER DEFAULT NULL,
+    activeEmployeeFilter BOOLEAN DEFAULT NULL,
+    roleFilter "Rol".description%TYPE DEFAULT NULL,
+    branchFilter "Branch".address_line_1%TYPE DEFAULT NULL,
+    date_start_filter "Absence"."startAbsence"%TYPE DEFAULT NULL, 
+    end_date_filter "Absence"."endAbsence"%TYPE DEFAULT NULL
+) RETURNS TABLE (
+    "first_name" varchar(256),
+    "last_name" varchar(256),
+    "quantity" integer
+) AS $$ 
+BEGIN 
+    RETURN QUERY
+    SELECT ("Employee".data).first_name, ("Employee".data).last_name, COUNT(*)::int AS quantity
+    FROM "Employee"
+        JOIN "EmployeeHistory" ON "Employee".id = "EmployeeHistory"."employeeId"
+        JOIN "Branch" ON "EmployeeHistory"."branchId" = "Branch".id
+        JOIN "Rol" ON "EmployeeHistory"."role" = "Rol".id
+        JOIN "Absence" ON ("EmployeeHistory".date_start = "Absence"."startEmployee" AND "EmployeeHistory"."employeeId" = "Absence"."employeeId")
+    WHERE
+        (activeEmployeeFilter IS NULL OR 
+            CASE 
+                WHEN activeEmployeeFilter THEN "EmployeeHistory".date_end IS NULL 
+                WHEN NOT activeEmployeeFilter THEN "EmployeeHistory".date_end IS NOT NULL
+            END
+        )
+        AND
+        (branchFilter IS NULL OR UPPER("Branch".address_line_1) = UPPER(branchFilter))
+        AND
+        (roleFilter IS NULL OR UPPER("Rol".description) = UPPER(roleFilter))
+        AND
+        (date_start_filter IS NULL OR end_date_filter IS NULL OR ("Absence"."startAbsence" >= date_start_filter AND "Absence"."endAbsence" <= end_date_filter))
+    GROUP BY "Employee".id
+    ORDER BY
+        CASE WHEN sortOrder THEN COUNT(*) END DESC,
+        CASE WHEN NOT sortOrder THEN COUNT(*) END ASC
+    LIMIT CASE WHEN limitFilter IS NOT NULL THEN limitFilter END;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ? Ejemplo de llamada del reporte
+-- ? SELECT * FROM employeeMoreAbsences(TRUE, 5, NULL, 'Cajero',NULL,NULL,NULL);
+
+-- * Reporte: Clientes con más o menos compras
+-- ? Filtros: escoger sucursal (local, ciudad o municipio), fecha de inicio
+
+CREATE OR REPLACE FUNCTION clientsBuysMore(
+    sortOrder BOOLEAN,
+    limitFilter INTEGER DEFAULT NULL,
+    branchFilter varchar(256) DEFAULT NULL,
+    date_start_filter "Order"."date"%TYPE DEFAULT NULL
+) RETURNS TABLE (
+    "first_name" varchar(256),
+    "last_name" varchar(256),
+    "quantity" integer
+) AS $$ 
+DECLARE 
+    placeType varchar(256) := getPlaceType(branchFilter);
+BEGIN 
+    RETURN QUERY
+    SELECT ("Client".data).first_name, ("Client".data).last_name, COUNT(*)::int AS quantity
+    FROM "Client"
+        JOIN "Order" ON "Client".id = "Order"."clientId"
+        JOIN "Branch" ON "Order".branch = "Branch".id
+    WHERE        
+    	(placeType IS NULL OR 
+    		CASE placeType 
+    			WHEN 'ADDRESS' THEN UPPER("Branch".address_line_1) = UPPER(branchFilter)
+    			WHEN 'CITY' THEN UPPER("Branch".city) = UPPER(branchFilter) 
+    			WHEN 'MUNICIPALTY' THEN UPPER("Branch".municipalty) = UPPER(branchFilter)
+    		END
+    		)
+        AND
+        (date_start_filter IS NULL OR "Order".date BETWEEN date_start_filter AND CURRENT_DATE)
+    GROUP BY "Client".id
+    ORDER BY 
+        CASE WHEN sortOrder THEN (COUNT(*)) END DESC,
+        CASE WHEN NOT sortOrder THEN (COUNT(*)) END ASC
+    LIMIT CASE WHEN limitFilter IS NOT NULL THEN limitFilter END;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ? Ejemplo de llamada del reporte
+-- ? SELECT * FROM clientsBuysMore(TRUE, 4, 'Pueblo', NULL);
+
+
 -- * Reporte de mayores ventas de productos por dia de semana, semana, mes o año
 -- ? Filtros: semana, semana, mes o año, fecha de inicio, fecha de fin, escoger sucursal, nombre del producto, categoria y local.
-
 
 CREATE OR REPLACE FUNCTION reportSalesByTime(
 	p_periodo text,
@@ -466,7 +576,6 @@ BEGIN
 END;
 $$
 LANGUAGE 'plpgsql';
-
 
 -- ? Ejemplo de la llamada al reporte
 -- ? SELECT * FROM reportSalesByTime('day', NULL, NULL, NULL, '2023-01-01', '2023-12-31')
