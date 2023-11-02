@@ -634,3 +634,173 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- SELECT * FROM reportHigherProfitsPerProduct(5)
+
+-- * Reporte de productos que necesitan restock, evaluando inventario y demanda.
+
+-------------------------------------------
+-- * Funciones extras para el reporte
+-------------------------------------------
+
+CREATE OR REPLACE FUNCTION getInventoryByProduct(productId uuid, branchId uuid ) 
+RETURNS numeric(10,0) AS $$
+DECLARE
+    productQuantity numeric(10,0); 
+    productSold numeric(10,0);
+BEGIN
+
+    SELECT SUM("BatchBuy".quantity) INTO productQuantity
+    FROM "BatchBuy"
+    WHERE 
+        "BatchBuy".product = productId AND
+        "BatchBuy".branch = branchId;
+
+    SELECT SUM("OrderProduct".quantity) INTO productSold
+    FROM "OrderProduct"
+        JOIN "Order" ON "OrderProduct"."orderId" = "Order".id
+    WHERE 
+        "OrderProduct"."productId" = productId AND
+        "Order".branch = branchId;
+
+    IF productSold IS NULL THEN
+        productSold := 0;
+    END IF;
+    
+    RETURN productQuantity - productSold;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Ejmplo: SELECT getInventoryByProduct('p1', 'b1');
+
+CREATE OR REPLACE FUNCTION getAverageDemand(
+   productId uuid, 
+   branchId uuid,
+   typeFilter varchar(256), -- 'week', 'month'
+   timeFrame int -- TimeFrame es el numero de semanas o meses que se quieren evaluar
+) RETURNS numeric(10,0) AS $$
+DECLARE 
+   averageDemand numeric(10,0);
+BEGIN
+    IF typeFilter = 'week' THEN
+        SELECT SUM("OrderProduct".quantity) INTO averageDemand
+        FROM "OrderProduct"
+            JOIN "Order" ON "OrderProduct"."orderId" = "Order".id
+        WHERE 
+            "OrderProduct"."productId" = productId AND
+            "Order".branch = branchId AND
+            "Order".date BETWEEN NOW() - INTERVAL '1 week' * timeFrame AND NOW();
+    ELSEIF typeFilter = 'month' THEN
+        SELECT SUM("OrderProduct".quantity) INTO averageDemand
+        FROM "OrderProduct"
+            JOIN "Order" ON "OrderProduct"."orderId" = "Order".id
+        WHERE 
+            "OrderProduct"."productId" = productId AND
+            "Order".branch = branchId AND
+            "Order".date BETWEEN NOW() - INTERVAL '1 month' * timeFrame AND NOW();
+    END IF;
+
+    IF averageDemand IS NULL THEN
+        averageDemand := 0;
+    END IF;
+
+    RETURN averageDemand;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ! IMPORTANTE HAY QUE REVISAR POR PROBLEMA DE DATA :D
+
+CREATE OR REPLACE FUNCTION reportInventoryDemandAnalysis(branchId uuid, typeFilter varchar(256), timeFrame int) 
+RETURNS TABLE (
+    "product_name" varchar(256),
+    "product_category" varchar(256),
+    "product_stock" numeric(10,0),
+    "average_demand" numeric(10,0)
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT "Product".name, "Category".name, getInventoryByProduct("Product".id, branchId), getAverageDemand("Product".id, branchId, typeFilter, timeFrame)
+    FROM "BatchBuy" 
+        JOIN "Product" ON "BatchBuy".product = "Product".id
+        JOIN "Category" ON "Product".category = "Category".id
+    WHERE 
+        getInventoryByProduct("Product".id, branchId) > getAverageDemand("Product".id, branchId, typeFilter, timeFrame)
+    GROUP BY "Product".id, "Category".id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ? Ejemplo: SELECT * FROM reportInventoryDemandAnalysis('b1', 'week', 1);
+
+-- * Reporte de los empleados con mejor Salario
+-- ? Filtros: Por genero, rol, Antiguedad en la empresa, sucursal
+
+CREATE OR REPLACE FUNCTION getServiceYears(employeeId uuid) RETURNS numeric(10,0) AS $$
+DECLARE
+    serviceYears numeric(10,0);
+BEGIN
+    SELECT DATE_PART('year', NOW()) - DATE_PART('year', eh.date_start) INTO serviceYears
+    FROM "EmployeeHistory" eh
+    WHERE eh."employeeId" = employeeId AND eh.date_end IS NULL;
+    RETURN serviceYears;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION reportTopEarningEmployees(employeeGender varchar(2), employeeRole varchar, serviceYears int, limitFilter int)
+RETURNS TABLE (
+    employeeName varchar(255),
+    employeeLastName varchar(256),
+    highestSalary numeric(10, 2),
+    yearsOfExperience numeric(10, 0),
+    rol varchar(255)
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT (e.data).first_name, (e.data).last_name, eh.salary, getServiceYears(e.id), r.description
+    FROM "Employee" e
+        JOIN "EmployeeHistory" eh ON e.id = eh."employeeId"
+        JOIN "Rol" r ON r.id = eh.role
+    WHERE 
+        eh.date_end IS NULL AND
+        (employeeGender IS NULL OR (e.data).gender = employeeGender) AND
+        (employeeRole IS NULL OR r.description = employeeRole) AND
+        (serviceYears IS NULL OR getServiceYears(e.id) >= serviceYears)
+    ORDER BY highestSalary DESC
+    LIMIT CASE WHEN limitFilter IS NOT NULL THEN limitFilter END;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ? Ejemplo: SELECT * FROM reportTopEarningEmployees('M', 'Gerente', 5, 10);
+
+-------------------------------------------
+-- * Funciones para obtener los datos para filtrar
+-------------------------------------------
+
+CREATE OR REPLACE FUNCTION getBranches() RETURNS SETOF "Branch" AS $$ 
+BEGIN
+    RETURN QUERY
+    SELECT *
+    FROM "Branch";
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION getCategories() RETURNS SETOF "Category" AS $$
+BEGIN
+    RETURN QUERY
+    SELECT *
+    FROM "Category";
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION getRoles() RETURNS SETOF "Rol" AS $$
+BEGIN
+    RETURN QUERY
+    SELECT *
+    FROM "Rol";
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION getProducts() RETURNS SETOF "Product" AS $$
+BEGIN
+    RETURN QUERY
+    SELECT *
+    FROM "Product";
+END;
+$$ LANGUAGE plpgsql;
