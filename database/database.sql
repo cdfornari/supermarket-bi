@@ -373,3 +373,155 @@ $$ LANGUAGE plpgsql;
 
 -- ? Ejemplo de la llamada al reporte
 -- ? SELECT * FROM reportBranchesByBenefits(TRUE, 10, NULL, '2010-01-01', '2023-12-31');
+
+-- * Reporte de mayores ventas de productos por dia de semana, semana, mes o año
+-- ? Filtros: semana, semana, mes o año, fecha de inicio, fecha de fin, escoger sucursal, nombre del producto, categoria y local.
+
+
+CREATE OR REPLACE FUNCTION reportSalesByTime(
+	p_periodo text,
+	category_filter VARCHAR DEFAULT NULL,
+	branch_filter UUID DEFAULT NULL,
+	product_name_filter VARCHAR DEFAULT NULL,
+	start_date date DEFAULT NULL,
+	end_date date DEFAULT NULL
+)
+RETURNS TABLE(time_name TEXT, sales NUMERIC) AS
+$$
+BEGIN
+    IF p_periodo = 'month' THEN
+        RETURN QUERY 
+        SELECT TO_CHAR(date_trunc('month', "O"."date"), 'MM') AS mounth, 
+	    SUM("OP"."quantity") AS sales
+		FROM "OrderProduct" "OP"
+		JOIN "Product" "P" ON "OP"."productId" = "P"."id"
+		JOIN "Order" "O" ON "OP"."orderId" = "O"."id"
+		JOIN "Category" "C" ON "C"."id" = "P"."category"
+		WHERE 
+			(start_date IS NULL OR end_date IS NULL OR "O"."date" BETWEEN start_date AND end_date)
+		AND 
+			(category_filter IS NULL OR "C"."name" = category_filter)
+		AND 
+			(product_name_filter IS NULL OR "P"."name" = product_name_filter)
+		AND 
+			(branch_filter IS NULL OR "O"."branch" = branch_filter)
+		GROUP BY (mounth)
+		ORDER BY mounth;
+    ELSIF p_periodo = 'day' THEN
+        RETURN QUERY 
+        SELECT TO_CHAR("O"."date", 'Day') AS day_name,  
+	    SUM("OP"."quantity") AS sales
+		FROM "OrderProduct" "OP"
+		JOIN "Product" "P" ON "OP"."productId" = "P"."id"
+		JOIN "Order" "O" ON "OP"."orderId" = "O"."id"
+		JOIN "Category" "C" ON "C"."id" = "P"."category"
+		WHERE 
+			(start_date IS NULL OR end_date IS NULL OR "O"."date" BETWEEN start_date AND end_date)
+		AND 
+			(category_filter IS NULL OR "C"."name" = category_filter)
+		AND 
+			(product_name_filter IS NULL OR "P"."name" = product_name_filter)
+		AND 
+			(branch_filter IS NULL OR "O"."branch" = branch_filter)
+		GROUP BY (day_name)
+		ORDER BY day_name;
+	ELSIF p_periodo = 'week' THEN
+		RETURN QUERY 
+		SELECT CONCAT_WS( '  ', 
+		TO_CHAR(date_trunc('week', "O"."date"), 'YYYY-MM-DD'), 
+		TO_CHAR(date_trunc('week', "O"."date") + INTERVAL '7 day', 'YYYY-MM-DD'))  AS week,  
+		SUM("OP"."quantity") AS sales
+		FROM "OrderProduct" "OP"
+		JOIN "Product" "P" ON "OP"."productId" = "P"."id"
+		JOIN "Order" "O" ON "OP"."orderId" = "O"."id"
+		JOIN "Category" "C" ON "C"."id" = "P"."category"
+		WHERE 
+			(start_date IS NULL OR end_date IS NULL OR "O"."date" BETWEEN start_date AND end_date)
+		AND 
+			(category_filter IS NULL OR "C"."name" = category_filter)
+		AND 
+			(product_name_filter IS NULL OR "P"."name" = product_name_filter)
+		AND 
+			(branch_filter IS NULL OR "O"."branch" = branch_filter)
+		GROUP BY (week)
+		ORDER BY week;
+	ELSIF p_periodo = 'year' THEN
+	    RETURN QUERY 
+		SELECT TO_CHAR(date_trunc('year', "O"."date"), 'YYYY') AS years,  
+			   SUM("OP"."quantity") AS sales
+		FROM "OrderProduct" "OP"
+		JOIN "Product" "P" ON "OP"."productId" = "P"."id"
+		JOIN "Order" "O" ON "OP"."orderId" = "O"."id"
+		JOIN "Category" "C" ON "C"."id" = "P"."category"
+		WHERE 
+			(start_date IS NULL OR end_date IS NULL OR "O"."date" BETWEEN start_date AND end_date)
+		AND 
+			(category_filter IS NULL OR "C"."name" = category_filter)
+		AND 
+			(product_name_filter IS NULL OR "P"."name" = product_name_filter)
+		AND 
+			(branch_filter IS NULL OR "O"."branch" = branch_filter)
+		GROUP BY (years);
+    END IF;
+END;
+$$
+LANGUAGE 'plpgsql';
+
+
+-- ? Ejemplo de la llamada al reporte
+-- ? SELECT * FROM reportSalesByTime('day', NULL, NULL, NULL, '2023-01-01', '2023-12-31')
+
+
+-- * Reporte de mayores ventas de productos por dia de semana o mes
+-- ? Filtros: fecha de inicio, fecha de fin, escoger sucursal, nombre del producto, categoria y local.
+
+CREATE OR REPLACE FUNCTION reportHigherProfitsPerProduct(
+	n_limit BIGINT DEFAULT 20,
+	category_filter VARCHAR DEFAULT NULL,
+	branch_filter UUID DEFAULT NULL,
+	product_name_filter VARCHAR DEFAULT NULL,
+	start_date date DEFAULT NULL,
+	end_date date DEFAULT NULL
+)
+RETURNS TABLE (id uuid, name VARCHAR, benefits NUMERIC) AS $$
+BEGIN
+    RETURN QUERY 
+    SELECT "P"."id", "P"."name", "P1"."subtotal" - "P2"."cost" AS benefits
+    FROM (
+        SELECT "P"."id" , "P"."price" * SUM("OP"."quantity") AS subtotal
+        FROM "OrderProduct" "OP"
+        INNER JOIN "Product" "P" ON "OP"."productId" = "P"."id"
+        INNER JOIN "Order" "O" ON "O"."id" = "OP"."orderId"
+        INNER JOIN "Category" "C" ON "P"."category" = "C"."id"
+        WHERE 
+			(start_date IS NULL OR end_date IS NULL OR "O"."date" BETWEEN start_date AND end_date)
+		AND 
+			(product_name_filter IS NULL OR "P"."name" = product_name_filter)
+		AND 
+			(branch_filter IS NULL OR "O"."branch" = branch_filter)
+		AND 
+			(category_filter IS NULL OR "C"."name" = category_filter)
+        GROUP BY ("P"."id")
+    ) "P1"
+    JOIN (
+        SELECT "P"."id", SUM("B"."purchase_price") AS cost
+        FROM "BatchBuy" "B"
+        INNER JOIN "Product" "P" ON "B"."product" = "P"."id"
+        INNER JOIN "Category" "C" ON "P"."category" = "C"."id"
+        WHERE 
+			(start_date IS NULL OR end_date IS NULL OR "B"."date" BETWEEN start_date AND end_date)
+		AND 
+			(product_name_filter IS NULL OR "P"."name" = product_name_filter)
+		AND 
+			(branch_filter IS NULL OR "B"."branch" = branch_filter)
+		AND 
+			(category_filter IS NULL OR "C"."name" = category_filter)
+        GROUP BY ("P"."id")
+    ) "P2" ON ("P1"."id" = "P2"."id")
+    JOIN "Product" "P" ON ("P"."id" = "P1"."id")
+    ORDER BY (benefits)
+    LIMIT n_limit;
+END;
+$$ LANGUAGE plpgsql;
+
+-- SELECT * FROM reportHigherProfitsPerProduct(5)
