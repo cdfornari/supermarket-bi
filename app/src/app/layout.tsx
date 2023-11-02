@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { Montserrat } from 'next/font/google';
-import { ProviderWrapper } from '../../components/providers/provider-wrapper';
-import { TabContainer } from '../../components/ui/TabContainer';
-import { classNames } from '../../utils/classNames';
+import { ProviderWrapper } from '../components/providers/provider-wrapper';
+import { TabContainer } from '../components/ui/TabContainer';
+import { classNames } from '../utils/classNames';
 import './globals.css';
 
 const montserrat = Montserrat({ weight: 'variable', subsets: ['latin'] });
