@@ -780,26 +780,36 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION reportTopEarningEmployees(employeeGender varchar(2), employeeRole uuid, serviceYears int, limitFilter int)
+CREATE OR REPLACE FUNCTION reportTopEarningEmployees(
+	activeEmployeeFilter BOOLEAN,
+	employeeGender varchar(2),
+	employeeRole uuid,
+	branchFilter "Branch".id%TYPE,
+	limitFilter int
+)
 RETURNS TABLE (
     employeeName varchar(255),
     employeeLastName varchar(256),
     highestSalary numeric(10, 2),
-    yearsOfExperience numeric(10, 0),
     rol varchar(255)
 ) AS $$
 BEGIN
     RETURN QUERY
-    SELECT (e.data).first_name, (e.data).last_name, eh.salary, getServiceYears(e.id), r.description
+    SELECT (e.data).first_name, (e.data).last_name, eh.salary, r.description
     FROM "Employee" e
         JOIN "EmployeeHistory" eh ON e.id = eh."employeeId"
         JOIN "Rol" r ON r.id = eh.role
     WHERE 
-        eh.date_end IS NULL AND
         (employeeGender IS NULL OR (e.data).gender = employeeGender) AND
         (employeeRole IS NULL OR r.id = employeeRole) AND
-        (serviceYears IS NULL OR getServiceYears(e.id) >= serviceYears)
-    ORDER BY highestSalary DESC
+        (branchFilter IS NULL OR "eh"."branchId" = branchFilter) AND
+        (activeEmployeeFilter IS NULL OR 
+            CASE 
+                WHEN activeEmployeeFilter THEN "eh".date_end IS NULL 
+                WHEN NOT activeEmployeeFilter THEN "eh".date_end IS NOT NULL
+            END
+        )
+    ORDER BY eh.salary DESC
     LIMIT CASE WHEN limitFilter IS NOT NULL THEN limitFilter END;
 END;
 $$ LANGUAGE plpgsql;
