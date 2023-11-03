@@ -177,7 +177,6 @@ interface IBody {
 const Body: FC<IBody> = ({ category, branch, endDate, order, startDate }) => {
   const [data, setData] = useState<any>();
   useEffect(() => {
-    console.log(category);
     axios
       .post<any>('api/popularProducts', {
         categoryFilter: category ? formatString(category) : null,
