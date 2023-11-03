@@ -4,7 +4,7 @@ import useSWR from 'swr';
 import axios from 'axios';
 import { Report } from '@/components/ui/Report';
 import {
-    Button,
+  Button,
   Card,
   CardBody,
   CardHeader,
@@ -103,21 +103,21 @@ const Filters: FC<IFilters> = ({
         <div className="h-full w-full flex flex-col gap-4">
           {
             active ? (
-                <Button
-                    onClick={() => setActive(false)}
-                    color="success"
-                    variant='flat'
-                >
-                    Solo empleados activos
-                </Button>
+              <Button
+                onClick={() => setActive(false)}
+                color="success"
+                variant='flat'
+              >
+                Solo empleados activos
+              </Button>
             ) : (
-                <Button
-                    onClick={() => setActive(true)}
-                    color="danger"
-                    variant='flat'
-                >
-                    Solo empleados inactivos
-                </Button>
+              <Button
+                onClick={() => setActive(true)}
+                color="danger"
+                variant='flat'
+              >
+                Solo empleados inactivos
+              </Button>
             )
           }
           <Input
@@ -197,14 +197,15 @@ const head = () => {
           width={200}
         />
         <div className="flex flex-col">
-          <p className="text-md">Productos más populares.</p>
-          <p className="text-small text-default-500">nextui.org</p>
+          <p className="text-md">Ausencias de empleados.</p>
+          <p className="text-small text-default-500">
+            Este reporte ofrece un análisis detallado de la asistencia de los empleados en nuestra organización.
+          </p>
         </div>
       </CardHeader>
     </Card>
   );
 };
-
 
 interface IBody {
   rol: string | undefined;
@@ -247,17 +248,23 @@ const Body: FC<IBody> = ({
       <CardBody>
         <Table>
           <TableHeader>
-            <TableColumn>Nombre</TableColumn>
-            <TableColumn>Ausencias Totales</TableColumn>
+            <TableColumn>Nombre del empleado</TableColumn>
+            <TableColumn>Rol</TableColumn>
+            <TableColumn>Estado del empleado</TableColumn>
+            <TableColumn>Direccion de sucursal</TableColumn>
+            <TableColumn>Cantidad inasistencias</TableColumn>
           </TableHeader>
           <TableBody
             emptyContent={
               'No hay empleados con ausencias con los parámetros de búsqueda seleccionados'
             }
           >
-            {data.map((item: any, i: number) => (
-              <TableRow key={item.i}>
-                <TableCell>{`${item.first_name} ${item.last_name}`}</TableCell>
+            {data.map((item: MoreAbsences, i: number) => (
+              <TableRow key={i}>
+                <TableCell>{item.first_name + ' ' +item.last_name}</TableCell>
+                <TableCell>{item.employee_rol}</TableCell>
+                <TableCell>{item.isActive}</TableCell>
+                <TableCell>{item.branch_name}</TableCell>
                 <TableCell>{item.quantity}</TableCell>
               </TableRow>
             ))}
@@ -267,3 +274,12 @@ const Body: FC<IBody> = ({
     </Card>
   );
 };
+
+interface MoreAbsences {
+  first_name: string;
+  last_name: string;
+  employee_rol: string;
+  isActive: string;
+  branch_name: string;
+  quantity: number;
+}
