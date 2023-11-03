@@ -7,23 +7,43 @@ export const useTabs = () => {
 
 const tabs = (pathname: string) => [
   {
-    name: 'Ventas y costos',
+    name: 'Productos populares',
     href: '/',
     active: pathname === '/',
   },
   {
-    name: 'Inventario',
-    href: '/inventario',
+    name: 'Productos con mayor margen de ganancia',
+    href: '/products',
+    active: pathname === '/products',
+  },
+  {
+    name: 'Ventas',
+    href: '/ventas',
+    active: pathname === '/ventas',
+  },
+  {
+    name: 'Productos que necesitan restock',
+    href: '/restock',
     active: pathname === '/inventario',
   },
   {
-    name: 'Clientes',
-    href: '/clientes',
-    active: pathname === '/clientes',
+    name: 'Sucursales con mayor utilidad',
+    href: '/sucursales',
+    active: pathname === '/sucursales',
   },
   {
-    name: 'Empleados',
-    href: '/empleados',
-    active: pathname === '/empleados',
+    name: 'Clientes que más compran',
+    href: '/clients',
+    active: pathname === '/clients',
+  },
+  {
+    name: 'Sueldos de empleados',
+    href: '/sueldos',
+    active: pathname === '/sueldos',
+  },
+  {
+    name: 'Ausencias de empleados',
+    href: '/ausencias',
+    active: pathname === '/ausencias',
   },
 ];
