@@ -116,8 +116,7 @@ const Filters: FC<IFilters> = ({
               {[null].concat(branches ?? []).map((item: any) =>
                 item ? (
                   <SelectItem key={item.id} value={item.id}>
-                    {item.address_line_1}, {item.municipalty}, {item.city},{' '}
-                    {item.zip}
+                    {`${item.address_line_1}, ${item.city}, ${item.state}, ${item.zip}`}
                   </SelectItem>
                 ) : (
                   <SelectItem key={0} value={0}>
@@ -182,7 +181,7 @@ const Body: FC<IBody> = ({ category, branch, endDate, order, startDate }) => {
     axios
       .post<any>('api/popularProducts', {
         categoryFilter: category ? formatString(category) : null,
-        //branch,
+        branch: branch ? formatString(branch) : null,
         date_start: formatString(startDate),
         date_end: formatString(endDate),
         sortOrder: order,
