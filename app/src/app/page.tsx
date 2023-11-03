@@ -169,7 +169,9 @@ const head = () => {
         />
         <div className="flex flex-col">
           <p className="text-md">Productos más populares.</p>
-          <p className="text-small text-default-500">nextui.org</p>
+          <p className="text-small text-default-500">
+            Este reporte muestra los productos que han demostrado un mayor nivel de popularidad en nuestra plataforma.
+          </p>
         </div>
       </CardHeader>
     </Card>

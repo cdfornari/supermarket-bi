@@ -4,11 +4,12 @@ import useSWR from 'swr';
 import axios from 'axios';
 import { Report } from '@/components/ui/Report';
 import {
-    Button,
+  Button,
   Card,
   CardBody,
   CardHeader,
   Checkbox,
+  Image,
   Input,
   Select,
   SelectItem,
@@ -25,10 +26,10 @@ import { formatString } from '@/utils/formatString';
 
 
 type GenderssMapKey = 'M' | 'F';
-const genders : GenderssMapKey[] = ['M', 'F']
+const genders: GenderssMapKey[] = ['M', 'F']
 const gendersMap = {
   "M": 'Hombre',
-  "F": 'Mujer', 
+  "F": 'Mujer',
 }
 
 export default function Home() {
@@ -91,43 +92,43 @@ const Filters: FC<IFilters> = ({
         <div className="h-full w-full flex flex-col gap-4">
 
 
-        <Select
-						label="Género"
-						onChange={(e) =>
-							// console.log(e.target.value)
-							setGender(e.target.value)
-						}
-						
-					>
-						{genders.map((item: GenderssMapKey) =>
-							(
-								<SelectItem key={item} value={item}>
-									{gendersMap[item]}
-								</SelectItem>
-							)
-						)}
+          <Select
+            label="Género"
+            onChange={(e) =>
+              // console.log(e.target.value)
+              setGender(e.target.value)
+            }
+
+          >
+            {genders.map((item: GenderssMapKey) =>
+            (
+              <SelectItem key={item} value={item}>
+                {gendersMap[item]}
+              </SelectItem>
+            )
+            )}
           </Select>
 
           {
             active ? (
-                <Button
-                    onClick={() => setActive(false)}
-                    color="success"
-                    variant='flat'
-                >
-                    Solo empleados activos
-                </Button>
+              <Button
+                onClick={() => setActive(false)}
+                color="success"
+                variant='flat'
+              >
+                Solo empleados activos
+              </Button>
             ) : (
-                <Button
-                    onClick={() => setActive(true)}
-                    color="danger"
-                    variant='flat'
-                >
-                    Solo empleados inactivos
-                </Button>
+              <Button
+                onClick={() => setActive(true)}
+                color="danger"
+                variant='flat'
+              >
+                Solo empleados inactivos
+              </Button>
             )
           }
-          
+
           {isLoadingBranches ? (
             <div className="flex justify-center w-full">
               <Spinner />
@@ -185,8 +186,19 @@ const Filters: FC<IFilters> = ({
 const head = () => {
   return (
     <Card className="w-full">
-      <CardHeader>
-        <h1>Empleados y sus salarios</h1>
+      <CardHeader className="flex gap-3">
+        <Image
+          alt="Shopping Hub Logo"
+          radius="sm"
+          src="/logo.png"
+          width={200}
+        />
+        <div className="flex flex-col">
+          <p className="text-md">Sueldos de Empleados.</p>
+          <p className="text-small text-default-500">
+            Este reporte muestra los salarios de los empleados en nuestra organización, proporcionando una visión detallada de la compensación de cada uno.
+          </p>
+        </div>
       </CardHeader>
     </Card>
   );
@@ -196,7 +208,7 @@ interface IBody {
   rol: string | undefined;
   branch: string | undefined;
   onlyActive: boolean;
-  gender : string | undefined;
+  gender: string | undefined;
 
 }
 
@@ -212,7 +224,7 @@ const Body: FC<IBody> = ({
       roleFilter: rol ? formatString(rol) : null,
       activeEmployee: onlyActive,
       branchFilter: branch ? formatString(branch) : null,
-      employeeGender : gender ? formatString(gender) : null,
+      employeeGender: gender ? formatString(gender) : null,
       limit: null,
     })
     axios
@@ -220,7 +232,7 @@ const Body: FC<IBody> = ({
         roleFilter: rol ? formatString(rol) : null,
         activeEmployee: onlyActive,
         branchFilter: branch ? formatString(branch) : null,
-        employeeGender : gender ? formatString(gender) : null,
+        employeeGender: gender ? formatString(gender) : null,
         limit: null,
       })
       .then((res) => {

@@ -446,6 +446,22 @@ $$ LANGUAGE plpgsql;
 -- ? SELECT * FROM employeeMoreAbsences(TRUE, 5, NULL, 'Cajero',NULL,NULL,NULL);
 -------------------------------------------
 
+CREATE OR REPLACE FUNCTION getIsActive( employeeId uuid, startDate date) RETURNS varchar(3) AS $$
+BEGIN
+    IF EXISTS (
+        SELECT "EmployeeHistory".date_end 
+        FROM "EmployeeHistory" 
+        WHERE 
+            "EmployeeHistory"."employeeId" = employeeId AND "EmployeeHistory".date_end IS NULL
+            AND "EmployeeHistory"."date_start" = startDate
+    ) THEN
+        RETURN 'Sí';
+    ELSE
+        RETURN 'No';
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION employeeMoreAbsences(
     sortOrder BOOLEAN,
     limitFilter INTEGER DEFAULT NULL,
@@ -455,13 +471,16 @@ CREATE OR REPLACE FUNCTION employeeMoreAbsences(
     date_start_filter "Absence"."startAbsence"%TYPE DEFAULT NULL, 
     end_date_filter "Absence"."endAbsence"%TYPE DEFAULT NULL
 ) RETURNS TABLE (
+    "branch_name" varchar(256),
     "first_name" varchar(256),
     "last_name" varchar(256),
+    "employee_rol" varchar(256),
+    "isActive" varchar(3),
     "quantity" integer
 ) AS $$ 
 BEGIN 
     RETURN QUERY
-    SELECT ("Employee".data).first_name, ("Employee".data).last_name, COUNT(*)::int AS quantity
+    SELECT "Branch".address_line_1 ,("Employee".data).first_name, ("Employee".data).last_name,"Rol".description, getIsActive("Employee".id, "EmployeeHistory".date_start) ,COUNT(*)::int AS quantity
     FROM "Employee"
         JOIN "EmployeeHistory" ON "Employee".id = "EmployeeHistory"."employeeId"
         JOIN "Branch" ON "EmployeeHistory"."branchId" = "Branch".id
@@ -480,7 +499,7 @@ BEGIN
         (roleFilter IS NULL OR "Rol".id = roleFilter)
         AND
         (date_start_filter IS NULL OR end_date_filter IS NULL OR ("Absence"."startAbsence" >= date_start_filter AND "Absence"."endAbsence" <= end_date_filter))
-    GROUP BY "Employee".id
+    GROUP BY "Employee".id, "Branch".id, "Rol".description, getIsActive("Employee".id, "EmployeeHistory".date_start)
     ORDER BY
         CASE WHEN sortOrder THEN COUNT(*) END DESC,
         CASE WHEN NOT sortOrder THEN COUNT(*) END ASC
@@ -503,22 +522,33 @@ CREATE OR REPLACE FUNCTION clientsBuysMore(
 ) RETURNS TABLE (
     "first_name" varchar(256),
     "last_name" varchar(256),
-    "quantity" integer
+    "client_phone" varchar(256),
+    "client_email" varchar(256),
+    "quantityOrders" integer,
+    "quantityProducts" integer,
+    "totalSpent" numeric(10,2)
 ) AS $$ 
 BEGIN 
     RETURN QUERY
-    SELECT ("Client".data).first_name, ("Client".data).last_name, COUNT(*)::int AS quantity
+    SELECT ("Client".data).first_name, 
+        ("Client".data).last_name,
+        ("Client".data).phone_number, 
+        ("Client".data).email, 
+        COUNT(DISTINCT "Order".id)::int AS quantityOrders,
+        SUM("OrderProduct".quantity)::int AS quantityProducts,
+        SUM("Order".subtotal + "Order".taxes) AS totalSpent
     FROM "Client"
         JOIN "Order" ON "Client".id = "Order"."clientId"
         JOIN "Branch" ON "Order".branch = "Branch".id
+        JOIN "OrderProduct" ON "Order".id = "OrderProduct"."orderId"
     WHERE        
         (branchFilter IS NULL OR "Branch".id = branchFilter)   
         AND
         (date_start_filter IS NULL OR end_date IS NULL OR "Order".date BETWEEN date_start_filter AND end_date)
     GROUP BY "Client".id
     ORDER BY 
-        CASE WHEN sortOrder THEN (COUNT(*)) END DESC,
-        CASE WHEN NOT sortOrder THEN (COUNT(*)) END ASC
+        CASE WHEN sortOrder THEN (COUNT(DISTINCT "Order".id)) END DESC,
+        CASE WHEN NOT sortOrder THEN (COUNT(DISTINCT "Order".id)) END ASC
     LIMIT CASE WHEN limitFilter IS NOT NULL THEN limitFilter END;
 END;
 $$ LANGUAGE plpgsql;
@@ -662,14 +692,14 @@ BEGIN
     FROM "BatchBuy"
     WHERE 
         "BatchBuy".product = productId AND
-        "BatchBuy".branch = branchId;
+        (branchId IS NULL OR "BatchBuy".branch = branchId);
 
     SELECT SUM("OrderProduct".quantity) INTO productSold
     FROM "OrderProduct"
         JOIN "Order" ON "OrderProduct"."orderId" = "Order".id
     WHERE 
         "OrderProduct"."productId" = productId AND
-        "Order".branch = branchId;
+        (branchId IS NULL OR "Order".branch = branchId);
 
     IF productSold IS NULL THEN
         productSold := 0;
@@ -694,7 +724,7 @@ BEGIN
             JOIN "Order" ON "OrderProduct"."orderId" = "Order".id
         WHERE 
             "OrderProduct"."productId" = productId AND
-            "Order".branch = branchId AND
+            (branchId IS NULL OR "Order".branch = branchId) AND
             "Order".date BETWEEN NOW() - INTERVAL '1 week' * timeFrame AND NOW();
     ELSEIF typeFilter = 'month' THEN
         SELECT SUM("OrderProduct".quantity) INTO averageDemand
@@ -702,7 +732,7 @@ BEGIN
             JOIN "Order" ON "OrderProduct"."orderId" = "Order".id
         WHERE 
             "OrderProduct"."productId" = productId AND
-            "Order".branch = branchId AND
+            (branchId IS NULL OR "Order".branch = branchId) AND
             "Order".date BETWEEN NOW() - INTERVAL '1 month' * timeFrame AND NOW();
     END IF;
 
@@ -729,9 +759,10 @@ BEGIN
     FROM "BatchBuy" 
         JOIN "Product" ON "BatchBuy".product = "Product".id
         JOIN "Category" ON "Product".category = "Category".id
-    WHERE 
-        getInventoryByProduct("Product".id, branchId) > getAverageDemand("Product".id, branchId, typeFilter, timeFrame)
-    GROUP BY "Product".id, "Category".id;
+    -- WHERE 
+        -- getInventoryByProduct("Product".id, branchId) > getAverageDemand("Product".id, branchId, typeFilter, timeFrame)
+    GROUP BY "Product".id, "Category".id
+    ORDER BY getAverageDemand("Product".id, branchId, typeFilter, timeFrame) DESC;
 END;
 $$ LANGUAGE plpgsql;
 

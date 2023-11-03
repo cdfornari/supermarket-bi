@@ -219,7 +219,9 @@ const head = () => {
         />
         <div className="flex flex-col">
           <p className="text-md">Ventas.</p>
-          <p className="text-small text-default-500">nextui.org</p>
+          <p className="text-small text-default-500">
+            Este reporte proporciona un desglose detallado de las ventas de productos en diferentes periodos de tiempo, desde días específicos de la semana hasta años completos.
+          </p>
         </div>
       </CardHeader>
     </Card>

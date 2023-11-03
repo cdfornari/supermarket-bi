@@ -97,7 +97,9 @@ const head = () => {
         />
         <div className="flex flex-col">
           <p className="text-md">Sucursales con mayor utilidad.</p>
-          <p className="text-small text-default-500">nextui.org</p>
+          <p className="text-small text-default-500">
+            Este reporte ofrece una visión detallada del rendimiento financiero de cada una de nuestras sucursales.
+          </p>
         </div>
       </CardHeader>
     </Card>
