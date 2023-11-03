@@ -133,6 +133,7 @@ const Body: FC<IBody> = ({ branch }) => {
             <TableColumn>Producto</TableColumn>
             <TableColumn>Categoría</TableColumn>
             <TableColumn>Stock</TableColumn>
+            <TableColumn>Demanda Estimada</TableColumn>
             <TableColumn>Estatus</TableColumn>
           </TableHeader>
           <TableBody
@@ -145,6 +146,7 @@ const Body: FC<IBody> = ({ branch }) => {
                 <TableCell>{item.product_name}</TableCell>
                 <TableCell>{item.product_category}</TableCell>
                 <TableCell>{item.product_stock}</TableCell>
+                <TableCell>{item.average_demand}</TableCell>
                 <TableCell>
                   {Number(item.product_stock) === 0 ? (
                     <Chip color="danger">Agotado</Chip>
