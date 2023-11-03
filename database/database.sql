@@ -320,13 +320,17 @@ $$ LANGUAGE plpgsql;
 -- * Creación de los reportes
 -------------------------------------------
 
+-------------------------------------------
 -- * Reporte de Productos más populares y menos populares
--- ? Filtros: fecha de inicio, fecha de fin - Categoria
+-- ? Filtros: fecha de inicio - fecha de fin, Categoría y branch
+-- ? SELECT * FROM reportProductsByPopularity(TRUE, 10, NULL, '2020-01-01', '2020-12-31');
+-------------------------------------------
 
 CREATE OR REPLACE FUNCTION reportProductsByPopularity(
     sortOrder BOOLEAN, -- True para ordenar de mayor a menor, False para ordenar de menor a mayor
     limitFilter INTEGER DEFAULT NULL,
-    categoryFilter varchar(256) DEFAULT NULL,
+    branchFilter UUID DEFAULT NULL,
+    categoryFilter UUID DEFAULT NULL,
     start_date date DEFAULT NULL,
     end_date date DEFAULT NULL
 ) RETURNS TABLE (
@@ -344,9 +348,9 @@ BEGIN
         JOIN "Category" ON "Product".category = "Category".id
         JOIN "Order" ON "OrderProduct"."orderId" = "Order".id
     WHERE 
-        (start_date IS NULL OR end_date IS NULL OR "Order".date BETWEEN start_date AND end_date) 
-        AND
-        (categoryFilter IS NULL OR "Category".name = categoryFilter)
+        (branchFilter IS NULL OR "Order".branch = branchFilter) AND
+        (start_date IS NULL OR end_date IS NULL OR "Order".date BETWEEN start_date AND end_date) AND
+        (categoryFilter IS NULL OR "Category".id = categoryFilter)
     GROUP BY "Product".id, "Category".id
     ORDER BY 
         CASE WHEN sortOrder THEN SUM("OrderProduct".quantity) END DESC, 
@@ -355,16 +359,61 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- ? Ejemplo de la llamada al reporte
--- ? SELECT * FROM reportProductsByPopularity(TRUE, 10, NULL, '2020-01-01', '2020-12-31');
-
+-------------------------------------------
 -- * Reporte de Sucursales con mayores beneficios y menores beneficios
--- ? Filtros: fecha de inicio, fecha de fin, escoger sucursal.
+-- ? Filtros: fecha de inicio, fecha de fin y escoger sucursal.
+-- ? SELECT * FROM reportBranchesByBenefits(TRUE, 10, NULL, '2010-01-01', '2023-12-31');
+-------------------------------------------
+
+CREATE OR REPLACE FUNCTION getBenefits(
+    branchId uuid, 
+    start_date date DEFAULT NULL, 
+    end_date date DEFAULT NULL
+) RETURNS numeric(10,2) AS $$
+DECLARE
+    earning numeric(10,2);
+    cost numeric(10,2);
+    salaries numeric(10,2);
+BEGIN
+
+    SELECT SUM("Order".subtotal - "Order".discount) INTO earning
+    FROM "Order"
+    WHERE 
+        "Order".branch = branchId AND
+        (start_date IS NULL OR end_date IS NULL OR "Order".date BETWEEN start_date AND end_date);
+
+    SELECT SUM("ExtraCost".cost) INTO cost
+    FROM "ExtraCost"
+    WHERE 
+        "ExtraCost".branch = branchId AND
+        (start_date IS NULL OR end_date IS NULL OR "ExtraCost".date BETWEEN start_date AND end_date);
+    
+    SELECT SUM("EmployeeHistory".salary) INTO salaries
+    FROM "EmployeeHistory"
+    WHERE 
+        "EmployeeHistory"."branchId" = branchId AND
+        ("EmployeeHistory".date_end IS NULL);
+
+    IF cost IS NULL THEN
+        cost := 0;
+    END IF;
+
+    IF salaries IS NULL THEN
+        salaries := 0;
+    END IF;
+
+    IF earning IS NULL THEN
+        earning := 0;
+    END IF;
+
+    RETURN earning - cost - salaries;
+END;
+$$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION reportBranchesByBenefits(
     sortOrder BOOLEAN, -- True para ordenar de mayor a menor, False para ordenar de menor a mayor
     limitFilter INTEGER DEFAULT NULL,
-    branchFilter varchar(256) DEFAULT NULL,
+    branchFilter uuid DEFAULT NULL,
     start_date date DEFAULT NULL,
     end_date date DEFAULT NULL
 ) RETURNS TABLE (
@@ -376,33 +425,33 @@ CREATE OR REPLACE FUNCTION reportBranchesByBenefits(
 ) AS $$
 BEGIN
     RETURN QUERY
-    SELECT "Branch".address_line_1, "Branch".municipalty, "Branch".city, "Branch".mensual_cost, SUM("Order".subtotal - "Order".discount) as benefits
+    SELECT "Branch".address_line_1, 
+        "Branch".municipalty, 
+        "Branch".city, 
+        "Branch".mensual_cost, 
+        getBenefits("Branch".id, start_date, end_date) as branch_benefits
     FROM "Branch" 
-        JOIN "Order" ON "Branch".id = "Order".branch
     WHERE 
-        (start_date IS NULL OR end_date IS NULL OR "Order".date BETWEEN start_date AND end_date) 
-        AND
-        (branchFilter IS NULL OR "Branch".address_line_1 = branchFilter)
-    GROUP BY "Branch".id
+        (branchFilter IS NULL OR "Branch".id = branchFilter)
     ORDER BY 
-        CASE WHEN sortOrder THEN SUM("Order".subtotal - "Order".discount) END DESC, 
-        CASE WHEN NOT sortOrder THEN SUM("Order".subtotal - "Order".discount) END ASC
+        CASE WHEN sortOrder THEN (getBenefits("Branch".id, start_date, end_date)) END DESC, 
+        CASE WHEN NOT sortOrder THEN (getBenefits("Branch".id, start_date, end_date)) END ASC
     LIMIT CASE WHEN limitFilter IS NOT NULL THEN limitFilter END;
 END;
 $$ LANGUAGE plpgsql;
 
--- ? Ejemplo de la llamada al reporte
--- ? SELECT * FROM reportBranchesByBenefits(TRUE, 10, NULL, '2010-01-01', '2023-12-31');
-
+-------------------------------------------
 -- * Reporte: Empleado con más o menos inasistencias
 -- ? Filtros: escoger local, empleados (activos, inactivos u ambos), fecha inicio y fin de la inasistencia, rol
+-- ? SELECT * FROM employeeMoreAbsences(TRUE, 5, NULL, 'Cajero',NULL,NULL,NULL);
+-------------------------------------------
 
 CREATE OR REPLACE FUNCTION employeeMoreAbsences(
     sortOrder BOOLEAN,
     limitFilter INTEGER DEFAULT NULL,
     activeEmployeeFilter BOOLEAN DEFAULT NULL,
-    roleFilter "Rol".description%TYPE DEFAULT NULL,
-    branchFilter "Branch".address_line_1%TYPE DEFAULT NULL,
+    roleFilter "Rol".id%TYPE DEFAULT NULL,
+    branchFilter "Branch".id%TYPE DEFAULT NULL,
     date_start_filter "Absence"."startAbsence"%TYPE DEFAULT NULL, 
     end_date_filter "Absence"."endAbsence"%TYPE DEFAULT NULL
 ) RETURNS TABLE (
@@ -426,9 +475,9 @@ BEGIN
             END
         )
         AND
-        (branchFilter IS NULL OR UPPER("Branch".address_line_1) = UPPER(branchFilter))
+        (branchFilter IS NULL OR "Branch".id = branchFilter)
         AND
-        (roleFilter IS NULL OR UPPER("Rol".description) = UPPER(roleFilter))
+        (roleFilter IS NULL OR "Rol".id = roleFilter)
         AND
         (date_start_filter IS NULL OR end_date_filter IS NULL OR ("Absence"."startAbsence" >= date_start_filter AND "Absence"."endAbsence" <= end_date_filter))
     GROUP BY "Employee".id
@@ -439,24 +488,22 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- ? Ejemplo de llamada del reporte
--- ? SELECT * FROM employeeMoreAbsences(TRUE, 5, NULL, 'Cajero',NULL,NULL,NULL);
-
+-------------------------------------------
 -- * Reporte: Clientes con más o menos compras
 -- ? Filtros: escoger sucursal (local, ciudad o municipio), fecha de inicio
+-- ? SELECT * FROM clientsBuysMore(TRUE, 4, 'Pueblo', NULL);
+-------------------------------------------
 
 CREATE OR REPLACE FUNCTION clientsBuysMore(
     sortOrder BOOLEAN,
     limitFilter INTEGER DEFAULT NULL,
-    branchFilter varchar(256) DEFAULT NULL,
+    branchFilter UUID DEFAULT NULL,
     date_start_filter "Order"."date"%TYPE DEFAULT NULL
 ) RETURNS TABLE (
     "first_name" varchar(256),
     "last_name" varchar(256),
     "quantity" integer
 ) AS $$ 
-DECLARE 
-    placeType varchar(256) := getPlaceType(branchFilter);
 BEGIN 
     RETURN QUERY
     SELECT ("Client".data).first_name, ("Client".data).last_name, COUNT(*)::int AS quantity
@@ -464,13 +511,7 @@ BEGIN
         JOIN "Order" ON "Client".id = "Order"."clientId"
         JOIN "Branch" ON "Order".branch = "Branch".id
     WHERE        
-    	(placeType IS NULL OR 
-    		CASE placeType 
-    			WHEN 'ADDRESS' THEN UPPER("Branch".address_line_1) = UPPER(branchFilter)
-    			WHEN 'CITY' THEN UPPER("Branch".city) = UPPER(branchFilter) 
-    			WHEN 'MUNICIPALTY' THEN UPPER("Branch".municipalty) = UPPER(branchFilter)
-    		END
-    		)
+        (branchFilter IS NULL OR "Branch".id = branchFilter)   
         AND
         (date_start_filter IS NULL OR "Order".date BETWEEN date_start_filter AND CURRENT_DATE)
     GROUP BY "Client".id
@@ -481,18 +522,17 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- ? Ejemplo de llamada del reporte
--- ? SELECT * FROM clientsBuysMore(TRUE, 4, 'Pueblo', NULL);
-
-
+-------------------------------------------
 -- * Reporte de mayores ventas de productos por dia de semana, semana, mes o año
 -- ? Filtros: semana, semana, mes o año, fecha de inicio, fecha de fin, escoger sucursal, nombre del producto, categoria y local.
+-- ? SELECT * FROM reportSalesByTime('day', NULL, NULL, NULL, '2023-01-01', '2023-12-31')
+-------------------------------------------
 
 CREATE OR REPLACE FUNCTION reportSalesByTime(
 	p_periodo text,
-	category_filter VARCHAR DEFAULT NULL,
+	category_filter UUID DEFAULT NULL,
 	branch_filter UUID DEFAULT NULL,
-	product_name_filter VARCHAR DEFAULT NULL,
+	product_name_filter UUID DEFAULT NULL,
 	start_date date DEFAULT NULL,
 	end_date date DEFAULT NULL
 )
@@ -510,9 +550,9 @@ BEGIN
 		WHERE 
 			(start_date IS NULL OR end_date IS NULL OR "O"."date" BETWEEN start_date AND end_date)
 		AND 
-			(category_filter IS NULL OR "C"."name" = category_filter)
+			(category_filter IS NULL OR "C"."id" = category_filter)
 		AND 
-			(product_name_filter IS NULL OR "P"."name" = product_name_filter)
+			(product_name_filter IS NULL OR "P"."id" = product_name_filter)
 		AND 
 			(branch_filter IS NULL OR "O"."branch" = branch_filter)
 		GROUP BY (mounth)
@@ -528,9 +568,9 @@ BEGIN
 		WHERE 
 			(start_date IS NULL OR end_date IS NULL OR "O"."date" BETWEEN start_date AND end_date)
 		AND 
-			(category_filter IS NULL OR "C"."name" = category_filter)
+			(category_filter IS NULL OR "C"."id" = category_filter)
 		AND 
-			(product_name_filter IS NULL OR "P"."name" = product_name_filter)
+			(product_name_filter IS NULL OR "P"."id" = product_name_filter)
 		AND 
 			(branch_filter IS NULL OR "O"."branch" = branch_filter)
 		GROUP BY (day_name)
@@ -566,9 +606,9 @@ BEGIN
 		WHERE 
 			(start_date IS NULL OR end_date IS NULL OR "O"."date" BETWEEN start_date AND end_date)
 		AND 
-			(category_filter IS NULL OR "C"."name" = category_filter)
+			(category_filter IS NULL OR "C"."id" = category_filter)
 		AND 
-			(product_name_filter IS NULL OR "P"."name" = product_name_filter)
+			(product_name_filter IS NULL OR "P"."id" = product_name_filter)
 		AND 
 			(branch_filter IS NULL OR "O"."branch" = branch_filter)
 		GROUP BY (years);
@@ -577,18 +617,17 @@ END;
 $$
 LANGUAGE 'plpgsql';
 
--- ? Ejemplo de la llamada al reporte
--- ? SELECT * FROM reportSalesByTime('day', NULL, NULL, NULL, '2023-01-01', '2023-12-31')
-
-
+-------------------------------------------
 -- * Reporte de mayores ventas de productos por dia de semana o mes
 -- ? Filtros: fecha de inicio, fecha de fin, escoger sucursal, nombre del producto, categoria y local.
+-- ? SELECT * FROM reportHigherProfitsPerProduct(5)
+-------------------------------------------
 
 CREATE OR REPLACE FUNCTION reportHigherProfitsPerProduct(
 	n_limit BIGINT DEFAULT 20,
-	category_filter VARCHAR DEFAULT NULL,
+	category_filter UUID DEFAULT NULL,
 	branch_filter UUID DEFAULT NULL,
-	product_name_filter VARCHAR DEFAULT NULL,
+	product_name_filter UUID DEFAULT NULL,
 	start_date date DEFAULT NULL,
 	end_date date DEFAULT NULL
 )
@@ -605,11 +644,11 @@ BEGIN
         WHERE 
 			(start_date IS NULL OR end_date IS NULL OR "O"."date" BETWEEN start_date AND end_date)
 		AND 
-			(product_name_filter IS NULL OR "P"."name" = product_name_filter)
+			(product_name_filter IS NULL OR "P"."id" = product_name_filter)
 		AND 
 			(branch_filter IS NULL OR "O"."branch" = branch_filter)
 		AND 
-			(category_filter IS NULL OR "C"."name" = category_filter)
+			(category_filter IS NULL OR "C"."id" = category_filter)
         GROUP BY ("P"."id")
     ) "P1"
     JOIN (
@@ -620,11 +659,11 @@ BEGIN
         WHERE 
 			(start_date IS NULL OR end_date IS NULL OR "B"."date" BETWEEN start_date AND end_date)
 		AND 
-			(product_name_filter IS NULL OR "P"."name" = product_name_filter)
+			(product_name_filter IS NULL OR "P"."id" = product_name_filter)
 		AND 
 			(branch_filter IS NULL OR "B"."branch" = branch_filter)
 		AND 
-			(category_filter IS NULL OR "C"."name" = category_filter)
+			(category_filter IS NULL OR "C"."id" = category_filter)
         GROUP BY ("P"."id")
     ) "P2" ON ("P1"."id" = "P2"."id")
     JOIN "Product" "P" ON ("P"."id" = "P1"."id")
@@ -633,12 +672,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- SELECT * FROM reportHigherProfitsPerProduct(5)
-
--- * Reporte de productos que necesitan restock, evaluando inventario y demanda.
-
 -------------------------------------------
--- * Funciones extras para el reporte
+-- * Reporte de productos que necesitan restock, evaluando inventario y demanda.
+-- ? Filtros: busqueda por sucursal y por tipo de filtro (semana, mes), periodo de tiempo
+-- ? SELECT * FROM reportInventoryDemandAnalysis('b1', 'week', 1);
 -------------------------------------------
 
 CREATE OR REPLACE FUNCTION getInventoryByProduct(productId uuid, branchId uuid ) 
@@ -668,8 +705,6 @@ BEGIN
     RETURN productQuantity - productSold;
 END;
 $$ LANGUAGE plpgsql;
-
--- Ejmplo: SELECT getInventoryByProduct('p1', 'b1');
 
 CREATE OR REPLACE FUNCTION getAverageDemand(
    productId uuid, 
@@ -727,10 +762,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- ? Ejemplo: SELECT * FROM reportInventoryDemandAnalysis('b1', 'week', 1);
-
+-------------------------------------------
 -- * Reporte de los empleados con mejor Salario
 -- ? Filtros: Por genero, rol, Antiguedad en la empresa, sucursal
+-- ? SELECT * FROM reportTopEarningEmployees('M', 'Gerente', 5, 10);
+-------------------------------------------
 
 CREATE OR REPLACE FUNCTION getServiceYears(employeeId uuid) RETURNS numeric(10,0) AS $$
 DECLARE
@@ -743,7 +779,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION reportTopEarningEmployees(employeeGender varchar(2), employeeRole varchar, serviceYears int, limitFilter int)
+CREATE OR REPLACE FUNCTION reportTopEarningEmployees(employeeGender varchar(2), employeeRole uuid, serviceYears int, limitFilter int)
 RETURNS TABLE (
     employeeName varchar(255),
     employeeLastName varchar(256),
@@ -760,14 +796,12 @@ BEGIN
     WHERE 
         eh.date_end IS NULL AND
         (employeeGender IS NULL OR (e.data).gender = employeeGender) AND
-        (employeeRole IS NULL OR r.description = employeeRole) AND
+        (employeeRole IS NULL OR r.id = employeeRole) AND
         (serviceYears IS NULL OR getServiceYears(e.id) >= serviceYears)
     ORDER BY highestSalary DESC
     LIMIT CASE WHEN limitFilter IS NOT NULL THEN limitFilter END;
 END;
 $$ LANGUAGE plpgsql;
-
--- ? Ejemplo: SELECT * FROM reportTopEarningEmployees('M', 'Gerente', 5, 10);
 
 -------------------------------------------
 -- * Funciones para obtener los datos para filtrar
