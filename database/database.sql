@@ -589,9 +589,9 @@ BEGIN
 		WHERE 
 			(start_date IS NULL OR end_date IS NULL OR "O"."date" BETWEEN start_date AND end_date)
 		AND 
-			(category_filter IS NULL OR "C"."name" = category_filter)
+			(category_filter IS NULL OR "C"."id" = category_filter)
 		AND 
-			(product_name_filter IS NULL OR "P"."name" = product_name_filter)
+			(product_name_filter IS NULL OR "P"."id" = product_name_filter)
 		AND 
 			(branch_filter IS NULL OR "O"."branch" = branch_filter)
 		GROUP BY (week)
