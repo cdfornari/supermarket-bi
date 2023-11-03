@@ -498,7 +498,8 @@ CREATE OR REPLACE FUNCTION clientsBuysMore(
     sortOrder BOOLEAN,
     limitFilter INTEGER DEFAULT NULL,
     branchFilter UUID DEFAULT NULL,
-    date_start_filter "Order"."date"%TYPE DEFAULT NULL
+    date_start_filter "Order"."date"%TYPE DEFAULT NULL,
+    end_date "Order"."date"%TYPE DEFAULT NULL
 ) RETURNS TABLE (
     "first_name" varchar(256),
     "last_name" varchar(256),
@@ -513,7 +514,7 @@ BEGIN
     WHERE        
         (branchFilter IS NULL OR "Branch".id = branchFilter)   
         AND
-        (date_start_filter IS NULL OR "Order".date BETWEEN date_start_filter AND CURRENT_DATE)
+        (date_start_filter IS NULL OR end_date IS NULL OR "Order".date BETWEEN date_start_filter AND end_date)
     GROUP BY "Client".id
     ORDER BY 
         CASE WHEN sortOrder THEN (COUNT(*)) END DESC,

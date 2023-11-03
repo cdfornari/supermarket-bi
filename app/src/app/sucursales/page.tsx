@@ -129,7 +129,7 @@ const Body: FC<IBody> = ({ endDate, order, startDate }) => {
           </TableHeader>
           <TableBody
             emptyContent={
-              'No hay ventas con los parámetros de búsqueda seleccionados'
+              'No hay resultados con los parámetros de búsqueda seleccionados'
             }
           >
             {data.map((item: any) => (
