@@ -620,56 +620,28 @@ LANGUAGE 'plpgsql';
 
 -------------------------------------------
 -- * Reporte de mayores ventas de productos por dia de semana o mes
--- ? Filtros: fecha de inicio, fecha de fin, escoger sucursal, nombre del producto, categoria y local.
--- ? SELECT * FROM reportHigherProfitsPerProduct(5)
+-- ? Filtros: categoria y local.
+-- ? SELECT * FROM reportHigherProfitsPerProduct(NULL, NULL)
 -------------------------------------------
-
 CREATE OR REPLACE FUNCTION reportHigherProfitsPerProduct(
-	n_limit BIGINT DEFAULT 20,
 	category_filter UUID DEFAULT NULL,
-	branch_filter UUID DEFAULT NULL,
-	product_name_filter UUID DEFAULT NULL,
-	start_date date DEFAULT NULL,
-	end_date date DEFAULT NULL
+	branch_filter UUID DEFAULT NULL
 )
-RETURNS TABLE (id uuid, name VARCHAR, benefits NUMERIC) AS $$
+RETURNS TABLE (id uuid, name VARCHAR, price NUMERIC, cost NUMERIC, benefits NUMERIC) AS $$
 BEGIN
     RETURN QUERY 
-    SELECT "P"."id", "P"."name", "P1"."subtotal" - "P2"."cost" AS benefits
+    SELECT "P"."id", "P"."name", "P".price, "P1"."costo_unitario", ("P".price - "P1"."costo_unitario") * 100 / "P1"."costo_unitario"  AS benefits
     FROM (
-        SELECT "P"."id" , "P"."price" * SUM("OP"."quantity") AS subtotal
-        FROM "OrderProduct" "OP"
-        INNER JOIN "Product" "P" ON "OP"."productId" = "P"."id"
-        INNER JOIN "Order" "O" ON "O"."id" = "OP"."orderId"
-        INNER JOIN "Category" "C" ON "P"."category" = "C"."id"
-        WHERE 
-			(start_date IS NULL OR end_date IS NULL OR "O"."date" BETWEEN start_date AND end_date)
-		AND 
-			(product_name_filter IS NULL OR "P"."id" = product_name_filter)
-		AND 
-			(branch_filter IS NULL OR "O"."branch" = branch_filter)
-		AND 
-			(category_filter IS NULL OR "C"."id" = category_filter)
-        GROUP BY ("P"."id")
+		SELECT "Bb".product  AS id, SUM("Bb".purchase_price) / SUM("Bb".quantity) AS costo_unitario
+		FROM "BatchBuy" "Bb"
+		WHERE 
+			(branch_filter IS NULL OR "Bb"."branch" = branch_filter)
+		GROUP BY ("Bb".product) 
     ) "P1"
-    JOIN (
-        SELECT "P"."id", SUM("B"."purchase_price") AS cost
-        FROM "BatchBuy" "B"
-        INNER JOIN "Product" "P" ON "B"."product" = "P"."id"
-        INNER JOIN "Category" "C" ON "P"."category" = "C"."id"
-        WHERE 
-			(start_date IS NULL OR end_date IS NULL OR "B"."date" BETWEEN start_date AND end_date)
-		AND 
-			(product_name_filter IS NULL OR "P"."id" = product_name_filter)
-		AND 
-			(branch_filter IS NULL OR "B"."branch" = branch_filter)
-		AND 
-			(category_filter IS NULL OR "C"."id" = category_filter)
-        GROUP BY ("P"."id")
-    ) "P2" ON ("P1"."id" = "P2"."id")
-    JOIN "Product" "P" ON ("P"."id" = "P1"."id")
-    ORDER BY (benefits)
-    LIMIT n_limit;
+    JOIN "Product" "P" ON ("P1"."id" = "P"."id")
+    WHERE 
+		(category_filter IS NULL OR "P"."id" = category_filter)
+    ORDER BY (benefits) DESC;
 END;
 $$ LANGUAGE plpgsql;
 
