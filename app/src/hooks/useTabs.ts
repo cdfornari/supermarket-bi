@@ -24,7 +24,7 @@ const tabs = (pathname: string) => [
   {
     name: 'Productos que necesitan restock',
     href: '/restock',
-    active: pathname === '/inventario',
+    active: pathname === '/restock',
   },
   {
     name: 'Sucursales con mayor utilidad',

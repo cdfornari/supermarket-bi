@@ -757,8 +757,6 @@ BEGIN
     FROM "BatchBuy" 
         JOIN "Product" ON "BatchBuy".product = "Product".id
         JOIN "Category" ON "Product".category = "Category".id
-    WHERE 
-        getInventoryByProduct("Product".id, branchId) > getAverageDemand("Product".id, branchId, typeFilter, timeFrame)
     GROUP BY "Product".id, "Category".id;
 END;
 $$ LANGUAGE plpgsql;
