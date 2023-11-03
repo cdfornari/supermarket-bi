@@ -664,13 +664,13 @@ BEGIN
     FROM (
 		SELECT "Bb".product  AS id, SUM("Bb".purchase_price) / SUM("Bb".quantity) AS costo_unitario
 		FROM "BatchBuy" "Bb"
-		WHERE 
-			(branch_filter IS NULL OR "Bb"."branch" = branch_filter)
-		GROUP BY ("Bb".product) 
+		 WHERE 
+		 	(branch_filter IS NULL OR "Bb"."branch" = branch_filter)
+		GROUP BY ("Bb".product)
     ) "P1"
     JOIN "Product" "P" ON ("P1"."id" = "P"."id")
     WHERE 
-		(category_filter IS NULL OR "P"."id" = category_filter)
+		(category_filter IS NULL OR "P".category = category_filter)
     ORDER BY (benefits) DESC;
 END;
 $$ LANGUAGE plpgsql;
