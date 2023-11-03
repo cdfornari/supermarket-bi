@@ -22,12 +22,12 @@ export default function RootLayout({
       <body
         className={classNames(
           montserrat,
-          'dark h-full text-foreground bg-background'
+          'dark h-screen text-foreground bg-background overflow-hidden'
         )}
       >
         <ProviderWrapper>
           <TabContainer />
-          <main className="flex h-full flex-col items-center justify-between p-24">
+          <main className="flex h-full flex-col items-center justify-between px-24 pt-10 pb-24">
             {children}
           </main>
         </ProviderWrapper>
