@@ -232,7 +232,7 @@ const Body: FC<IBody> = ({
         activeEmployee: onlyActive,
         branchFilter: branch ? formatString(branch) : null,
         date_start: formatString(startDate),
-        date_end: formatString(endDate),
+        date_end: endDate ? formatString(endDate) : null,
         sortOrder: order,
         limit: null,
       })

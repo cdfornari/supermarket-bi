@@ -257,7 +257,7 @@ const Body: FC<IBody> = ({
             }
           >
             {data.map((item: any, i: number) => (
-              <TableRow key={item.employeename + item.employeelastname}>
+              <TableRow key={i}>
                 <TableCell>{`${item.employeename} ${item.employeelastname}`}</TableCell>
                 <TableCell>{item.highestsalary}</TableCell>
                 <TableCell>{item.rol}</TableCell>

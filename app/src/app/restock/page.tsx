@@ -8,6 +8,7 @@ import {
   CardBody,
   CardHeader,
   Chip,
+  Image,
   Select,
   SelectItem,
   Spinner,
@@ -81,8 +82,19 @@ const Filters: FC<IFilters> = ({ setBranch }) => {
 const head = () => {
   return (
     <Card className="w-full">
-      <CardHeader>
-        <h1>Productos que necesitan restock.</h1>
+      <CardHeader className="flex gap-3">
+        <Image
+          alt="Shopping Hub Logo"
+          radius="sm"
+          src="/logo.png"
+          width={200}
+        />
+        <div className="flex flex-col">
+          <p className="text-md">Productos que necesitan restock.</p>
+          <p className="text-small text-default-500">
+            Este reporte ofrece un análisis detallado de los niveles de stock de los productos: si están agotados, si hay suficiente stock, si hay poco stock y si están por debajo de la demanda.
+          </p>
+        </div>
       </CardHeader>
     </Card>
   );
@@ -120,6 +132,7 @@ const Body: FC<IBody> = ({ branch }) => {
           <TableHeader>
             <TableColumn>Producto</TableColumn>
             <TableColumn>Categoría</TableColumn>
+            <TableColumn>Stock</TableColumn>
             <TableColumn>Estatus</TableColumn>
           </TableHeader>
           <TableBody
@@ -131,6 +144,7 @@ const Body: FC<IBody> = ({ branch }) => {
               <TableRow key={item.product_name}>
                 <TableCell>{item.product_name}</TableCell>
                 <TableCell>{item.product_category}</TableCell>
+                <TableCell>{item.product_stock}</TableCell>
                 <TableCell>
                   {Number(item.product_stock) === 0 ? (
                     <Chip color="danger">Agotado</Chip>
