@@ -7,6 +7,7 @@ import {
   Card,
   CardBody,
   CardHeader,
+  Image,
   Input,
   Select,
   SelectItem,
@@ -87,8 +88,19 @@ const Filters: FC<IFilters> = ({
 const head = () => {
   return (
     <Card className="w-full">
-      <CardHeader>
-        <h1>Sucursales con mayor utilidad.</h1>
+      <CardHeader className="flex gap-3">
+        <Image
+          alt="Shopping Hub Logo"
+          radius="sm"
+          src="/logo.png"
+          width={200}
+        />
+        <div className="flex flex-col">
+          <p className="text-md">Sucursales con mayor utilidad.</p>
+          <p className="text-small text-default-500">
+            Este reporte ofrece una visión detallada del rendimiento financiero de cada una de nuestras sucursales.
+          </p>
+        </div>
       </CardHeader>
     </Card>
   );

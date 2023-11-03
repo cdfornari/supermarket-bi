@@ -7,6 +7,7 @@ import {
   Card,
   CardBody,
   CardHeader,
+  Image,
   Input,
   Select,
   SelectItem,
@@ -159,8 +160,19 @@ const Filters: FC<IFilters> = ({
 const head = () => {
   return (
     <Card className="w-full">
-      <CardHeader>
-        <h1>Productos más populares.</h1>
+      <CardHeader className="flex gap-3">
+        <Image
+          alt="Shopping Hub Logo"
+          radius="sm"
+          src="/logo.png"
+          width={200}
+        />
+        <div className="flex flex-col">
+          <p className="text-md">Clientes que más compran.</p>
+          <p className="text-small text-default-500">
+            Este reporte proporciona un análisis detallado del comportamiento de compra de nuestros clientes.
+          </p>
+        </div>
       </CardHeader>
     </Card>
   );
@@ -210,18 +222,26 @@ const Body: FC<IBody> = ({
       <CardBody>
         <Table>
           <TableHeader>
-            <TableColumn>Nombre</TableColumn>
-            <TableColumn>Compras totales</TableColumn>
+            <TableColumn>Nombre Cliente</TableColumn>
+            <TableColumn>Teléfono</TableColumn>
+            <TableColumn>Email</TableColumn>
+            <TableColumn>Total Ordenes</TableColumn>
+            <TableColumn>Total Productos</TableColumn>
+            <TableColumn>Total gastado</TableColumn>
           </TableHeader>
           <TableBody
             emptyContent={
               'No hay ventas con los parámetros de búsqueda seleccionados'
             }
           >
-            {data.map((item: any, i: number) => (
+            {data.map((item: ClientsBuysMore, i: number) => (
               <TableRow key={i}>
                 <TableCell>{`${item.first_name} ${item.last_name}`}</TableCell>
-                <TableCell>{item.quantity}</TableCell>
+                <TableCell>{`${item.client_phone}`}</TableCell>
+                <TableCell>{`${item.client_email}`}</TableCell>
+                <TableCell>{`${item.quantityOrders}`}</TableCell>
+                <TableCell>{`${item.quantityProducts}`}</TableCell>
+                <TableCell>{`${item.totalSpent} $`}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -230,3 +250,13 @@ const Body: FC<IBody> = ({
     </Card>
   );
 };
+
+interface ClientsBuysMore {
+  first_name: string;
+  last_name: string;
+  client_phone: string;
+  client_email: string;
+  quantityOrders: number;
+  quantityProducts: number;
+  totalSpent: number
+}

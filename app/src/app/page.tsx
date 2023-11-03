@@ -17,6 +17,7 @@ import {
   TableColumn,
   TableHeader,
   TableRow,
+  Image
 } from '@nextui-org/react';
 import { fetcher } from '@/utils/fetcher';
 import { formatString } from '@/utils/formatString';
@@ -159,8 +160,19 @@ const Filters: FC<IFilters> = ({
 const head = () => {
   return (
     <Card className="w-full">
-      <CardHeader>
-        <h1>Productos más populares.</h1>
+      <CardHeader className="flex gap-3">
+        <Image
+          alt="Shopping Hub Logo"
+          radius="sm"
+          src="/logo.png"
+          width={200}
+        />
+        <div className="flex flex-col">
+          <p className="text-md">Productos más populares.</p>
+          <p className="text-small text-default-500">
+            Este reporte muestra los productos que han demostrado un mayor nivel de popularidad en nuestra plataforma.
+          </p>
+        </div>
       </CardHeader>
     </Card>
   );

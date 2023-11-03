@@ -7,6 +7,7 @@ import {
   Card,
   CardBody,
   CardHeader,
+  Image,
   Input,
   Select,
   SelectItem,
@@ -209,8 +210,19 @@ const Filters: FC<IFilters> = ({
 const head = () => {
   return (
     <Card className="w-full">
-      <CardHeader>
-        <h1>Ventas.</h1>
+      <CardHeader className="flex gap-3">
+        <Image
+          alt="Shopping Hub Logo"
+          radius="sm"
+          src="/logo.png"
+          width={200}
+        />
+        <div className="flex flex-col">
+          <p className="text-md">Ventas.</p>
+          <p className="text-small text-default-500">
+            Este reporte proporciona un desglose detallado de las ventas de productos en diferentes periodos de tiempo, desde días específicos de la semana hasta años completos.
+          </p>
+        </div>
       </CardHeader>
     </Card>
   );
