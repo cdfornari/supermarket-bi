@@ -11,27 +11,20 @@ import {
   Input,
   Select,
   SelectItem,
-  Spinner,
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
+  Spinner
 } from '@nextui-org/react';
 import { fetcher } from '@/utils/fetcher';
 import { formatString } from '@/utils/formatString';
 import Bar from '@/components/Charts/Bar';
 
 type PeriodsMapKey = 'day' | 'month' | 'week' | 'year';
-const periods: PeriodsMapKey[] = ['day', 'month','week', 'year' ]
+const periods: PeriodsMapKey[] = ['day', 'month', 'week', 'year']
 const periodsMap = {
-	"day": 'Día de la semana',
-	"month": 'Mes',
-	"week": 'Semana',
-	"year": 'Año'
+  "day": 'Día de la semana',
+  "month": 'Mes',
+  "week": 'Semana',
+  "year": 'Año'
 }
-
 
 export default function Home() {
   const [branch, setBranch] = useState<string>();
@@ -74,8 +67,8 @@ interface IFilters {
   setCategory: (value: string | undefined) => void;
   setStartDate: (value: string | undefined) => void;
   setEndDate: (value: string | undefined) => void;
-  setProduct: (value: string  | undefined) => void;
-  setPeriod: (value: string ) => void;
+  setProduct: (value: string | undefined) => void;
+  setPeriod: (value: string) => void;
 }
 const Filters: FC<IFilters> = ({
   setBranch,
@@ -88,7 +81,7 @@ const Filters: FC<IFilters> = ({
   const { data: branches, isLoading: isLoadingBranches } = useSWR<any[]>(
     'api/branches',
     { fetcher }
-);
+  );
   const { data: categories, isLoading: isLoadingCategories } = useSWR<any[]>(
     'api/categories',
     { fetcher }
@@ -101,32 +94,31 @@ const Filters: FC<IFilters> = ({
     <Card className="h-full">
       <CardBody>
         <div className="h-full w-full flex flex-col gap-4">
-        	<Select
-						label="Periodo"
-						onChange={(e) =>
-							// console.log(e.target.value)
-							setPeriod(e.target.value)
-						}
-						
-					>
-						{periods.map((item: PeriodsMapKey) =>
-							(
-								<SelectItem key={item} value={item}>
-									{periodsMap[item]}
-								</SelectItem>
-							)
-						)}
+          <Select
+            label="Periodo"
+            onChange={(e) =>
+              setPeriod(e.target.value)
+            }
+
+          >
+            {periods.map((item: PeriodsMapKey) =>
+            (
+              <SelectItem key={item} value={item}>
+                {periodsMap[item]}
+              </SelectItem>
+            )
+            )}
           </Select>
           <Input
             type="date"
             label="Fecha inicial"
-						defaultValue={new Date().toDateString()}
+            defaultValue={new Date().toDateString()}
             onChange={(e) => setStartDate(e.target.value)}
           />
           <Input
             type="date"
             label="Fecha fin"
-						defaultValue={new Date().toDateString()}
+            defaultValue={new Date().toDateString()}
             onChange={(e) => setEndDate(e.target.value)}
           />
           {isLoadingBranches ? (
@@ -238,56 +230,58 @@ interface IBody {
 }
 const y = []
 const Body: FC<IBody> = ({ category, branch, endDate, product, startDate, period }) => {
-  
-	const [data, setData] = useState<any>();
 
-	const y = useMemo(() => {
-		if (period == 'week') {
-			return data ? data.map((item: any) => item.time_name.split(' ')) : []
-		} 
-		if (period == 'month') {
-			const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
-			return data ? data.map((item: any) => months[item.time_name - 1]) : []
-		}
-		return data ? data.map((item: any) => item.time_name) : []
+  const [data, setData] = useState<any>();
 
-	}, [data])
+  const y = useMemo(() => {
+    if (period == 'week') {
+      return data ? data.map((item: any) => item.time_name.split(' ')) : []
+    }
+    if (period == 'month') {
+      const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+      return data ? data.map((item: any) => months[item.time_name - 1]) : []
+    }
+    const orderedDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    return data
+      ? data.sort((a: any, b: any) => orderedDays.indexOf(a.time_name.trim()) - orderedDays.indexOf(b.time_name.trim()) ).map((item: any) => item.time_name)
+      : []
 
-	const x = useMemo(() => {
-		return data ? data.map((item: any) => item.sales) : []
-	}, [data])
+  }, [data])
+
+  const x = useMemo(() => {
+    return data ? data.map((item: any) => item.sales) : []
+  }, [data])
   useEffect(() => {
     console.log({ category, branch, endDate, product, startDate, period })
-		axios
+    axios
       .post<any>('api/salesByTime', {
         categoryFilter: category ? formatString(category) : null,
         branchFilter: branch ? formatString(branch) : null,
-        dateStart:  startDate ? formatString(startDate) : null,
-        dateEnd:  endDate ? formatString(endDate) : null,
+        dateStart: startDate ? formatString(startDate) : null,
+        dateEnd: endDate ? formatString(endDate) : null,
         productFilter: product ? formatString(product) : null,
-				period: period ? formatString(period) : 'day'
+        period: period ? formatString(period) : 'day'
       })
       .then((res) => {
         console.log(res.data);
-				
+
         setData(res.data);
       })
       .catch((err) => console.log(err));
   }, [category, branch, endDate, product, startDate, period]);
   if (!data) return <Spinner />;
   return (
-    <Card className="h-full"> 
-			<CardBody >
-				<Bar 
-					categories={y}
-					data={x}
-					dataUnits='ventas'
-				  title='Ventas'
-					width='100%'
-					height='460px'				
-				/>
-				
-			</CardBody>
+    <Card className="h-full">
+      <CardBody >
+        <Bar
+          categories={y}
+          data={x}
+          dataUnits='ventas'
+          title='Ventas'
+          width='100%'
+          height='460px'
+        />
+      </CardBody>
     </Card>
   );
 };

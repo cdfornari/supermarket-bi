@@ -9,8 +9,6 @@ import {
   CardHeader,
   Image,
   Input,
-  Select,
-  SelectItem,
   Spinner,
   Table,
   TableBody,
@@ -19,8 +17,8 @@ import {
   TableHeader,
   TableRow,
 } from '@nextui-org/react';
-import { fetcher } from '@/utils/fetcher';
 import { formatString } from '@/utils/formatString';
+import { BenefitsBranches } from '@/interfaces/reports.interface';
 
 export default function Home() {
   const [endDate, setEndDate] = useState(
@@ -60,7 +58,6 @@ interface IFilters {
 const Filters: FC<IFilters> = ({
   setStartDate,
   setEndDate,
-  setOrder,
   date,
 }) => {
   return (
@@ -133,7 +130,7 @@ const Body: FC<IBody> = ({ endDate, order, startDate }) => {
   return (
     <Card className="h-full">
       <CardBody>
-        <Table>
+        <Table aria-label="Sucursales con mayor utilidad" >
           <TableHeader>
             <TableColumn>Dirección</TableColumn>
             <TableColumn>Costo de mantenimiento mensual</TableColumn>
@@ -144,8 +141,8 @@ const Body: FC<IBody> = ({ endDate, order, startDate }) => {
               'No hay resultados con los parámetros de búsqueda seleccionados'
             }
           >
-            {data.map((item: any) => (
-              <TableRow key={item.product_name}>
+            {data.map((item: BenefitsBranches, i: number) => (
+              <TableRow key={i}>
                 <TableCell>{`${item.branch_address_line_1}, ${item.branch_municipalty}, ${item.branch_city}`}</TableCell>
                 <TableCell>{`$${item.branch_mensual_cost}`}</TableCell>
                 <TableCell>{`$${item.branch_benefits}`}</TableCell>

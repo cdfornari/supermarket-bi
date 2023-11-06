@@ -8,9 +8,7 @@ import {
   Card,
   CardBody,
   CardHeader,
-  Checkbox,
   Image,
-  Input,
   Select,
   SelectItem,
   Spinner,
@@ -23,6 +21,9 @@ import {
 } from '@nextui-org/react';
 import { fetcher } from '@/utils/fetcher';
 import { formatString } from '@/utils/formatString';
+import { HighestSalary } from '@/interfaces/reports.interface';
+import { Branch } from '@/interfaces/branch.interface';
+import { Rol } from '@/interfaces/rol.interface';
 
 
 type GenderssMapKey = 'M' | 'F';
@@ -78,11 +79,11 @@ const Filters: FC<IFilters> = ({
   setActive,
   active,
 }) => {
-  const { data: branches, isLoading: isLoadingBranches } = useSWR<any[]>(
+  const { data: branches, isLoading: isLoadingBranches } = useSWR<Branch[]>(
     'api/branches',
     { fetcher }
   );
-  const { data: roles, isLoading: isLoadingRoles } = useSWR<any[]>(
+  const { data: roles, isLoading: isLoadingRoles } = useSWR<Rol[]>(
     'api/roles',
     { fetcher }
   );
@@ -95,7 +96,6 @@ const Filters: FC<IFilters> = ({
           <Select
             label="Género"
             onChange={(e) =>
-              // console.log(e.target.value)
               setGender(e.target.value)
             }
 
@@ -140,10 +140,10 @@ const Filters: FC<IFilters> = ({
                 setBranch(e.target.value == '0' ? undefined : e.target.value)
               }
             >
-              {[null].concat(branches ?? []).map((item: any) =>
+              {[null, ...(branches ?? [])].map((item: Branch | null) =>
                 item ? (
                   <SelectItem key={item.id} value={item.id}>
-                    {`${item.address_line_1}, ${item.city}, ${item.state}, ${item.zip}`}
+                    {`${item.address_line_1}, ${item.city}, ${item.municipalty}, ${item.zip}`}
                   </SelectItem>
                 ) : (
                   <SelectItem key={0} value={0}>
@@ -164,7 +164,7 @@ const Filters: FC<IFilters> = ({
                 setRol(e.target.value == '0' ? undefined : e.target.value)
               }
             >
-              {[null].concat(roles ?? []).map((item: any) =>
+              {[null, ...(roles ?? [])].map((item: Rol | null) =>
                 item ? (
                   <SelectItem key={item.id} value={item.id}>
                     {item.description}
@@ -245,10 +245,10 @@ const Body: FC<IBody> = ({
   return (
     <Card className="h-full">
       <CardBody>
-        <Table>
+        <Table aria-label="Sueldos de empleados" >
           <TableHeader>
             <TableColumn>Nombre</TableColumn>
-            <TableColumn>Salario maximo</TableColumn>
+            <TableColumn>Salario</TableColumn>
             <TableColumn>Rol</TableColumn>
           </TableHeader>
           <TableBody
@@ -256,7 +256,7 @@ const Body: FC<IBody> = ({
               'No hay empleados con los parámetros de búsqueda seleccionados'
             }
           >
-            {data.map((item: any, i: number) => (
+            {data.map((item: HighestSalary, i: number) => (
               <TableRow key={i}>
                 <TableCell>{`${item.employeename} ${item.employeelastname}`}</TableCell>
                 <TableCell>{item.highestsalary}</TableCell>

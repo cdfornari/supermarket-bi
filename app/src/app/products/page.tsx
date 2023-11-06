@@ -4,14 +4,11 @@ import useSWR from 'swr';
 import axios from 'axios';
 import { Report } from '@/components/ui/Report';
 import {
-    Button,
     Card,
     CardBody,
     CardHeader,
-    Checkbox,
     Chip,
     Image,
-    Input,
     Select,
     SelectItem,
     Spinner,
@@ -24,6 +21,9 @@ import {
 } from '@nextui-org/react';
 import { fetcher } from '@/utils/fetcher';
 import { formatString } from '@/utils/formatString';
+import { HigherProfitsPerProduct } from '@/interfaces/reports.interface';
+import { Branch } from '@/interfaces/branch.interface';
+import { Category } from '@/interfaces/category.interface';
 
 
 type GenderssMapKey = 'M' | 'F';
@@ -66,11 +66,11 @@ const Filters: FC<IFilters> = ({
     setBranch,
     setCategory,
 }) => {
-    const { data: branches, isLoading: isLoadingBranches } = useSWR<any[]>(
+    const { data: branches, isLoading: isLoadingBranches } = useSWR<Branch[]>(
         'api/branches',
         { fetcher }
     );
-    const { data: categories, isLoading: isLoadingCategories } = useSWR<any[]>(
+    const { data: categories, isLoading: isLoadingCategories } = useSWR<Category[]>(
         'api/categories',
         { fetcher }
     );
@@ -89,10 +89,10 @@ const Filters: FC<IFilters> = ({
                                 setBranch(e.target.value == '0' ? undefined : e.target.value)
                             }
                         >
-                            {[null].concat(branches ?? []).map((item: any) =>
+                            {[null, ...(branches ?? [])].map((item: Branch | null) =>
                                 item ? (
                                     <SelectItem key={item.id} value={item.id}>
-                                        {`${item.address_line_1}, ${item.city}, ${item.state}, ${item.zip}`}
+                                        {`${item.address_line_1}, ${item.city}, ${item.municipalty}, ${item.zip}`}
                                     </SelectItem>
                                 ) : (
                                     <SelectItem key={0} value={0}>
@@ -113,7 +113,7 @@ const Filters: FC<IFilters> = ({
                                 setCategory(e.target.value == '0' ? undefined : e.target.value)
                             }
                         >
-                            {[null].concat(categories ?? []).map((item: any) =>
+                            {[null, ...(categories ?? [])].map((item: Category | null) =>
                                 item ? (
                                     <SelectItem key={item.id} value={item.id}>
                                         {item.name}
@@ -183,7 +183,7 @@ const Body: FC<IBody> = ({
     return (
         <Card className="h-full">
             <CardBody>
-                <Table>
+                <Table aria-label="Productos con mayor ganancia" >
                     <TableHeader>
                         <TableColumn>Nombre Producto</TableColumn>
                         <TableColumn>Precio Producto</TableColumn>
@@ -223,11 +223,3 @@ const Body: FC<IBody> = ({
         </Card>
     );
 };
-
-interface HigherProfitsPerProduct {
-    id: string;
-    name: string;
-    price: number;
-    cost: number;
-    benefits: number;
-}

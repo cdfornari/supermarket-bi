@@ -21,10 +21,11 @@ import {
 } from '@nextui-org/react';
 import { fetcher } from '@/utils/fetcher';
 import { formatString } from '@/utils/formatString';
+import { ClientsBuysMore } from '@/interfaces/reports.interface';
+import { Branch } from '@/interfaces/branch.interface';
 
 export default function Home() {
   const [branch, setBranch] = useState<string>();
-  //const [category, setCategory] = useState<string>();
   const [endDate, setEndDate] = useState(
     new Date().toISOString().split('T')[0]
   );
@@ -40,7 +41,6 @@ export default function Home() {
         filters={
           <Filters
             setBranch={setBranch}
-            //setCategory={setCategory}
             setStartDate={setStartDate}
             setEndDate={setEndDate}
             setOrder={setOrder}
@@ -51,7 +51,6 @@ export default function Home() {
         body={
           <Body
             branch={branch}
-            //category={category}
             endDate={endDate}
             order={order}
             startDate={startDate}
@@ -64,7 +63,6 @@ export default function Home() {
 
 interface IFilters {
   setBranch: (value: string | undefined) => void;
-  //setCategory: (value: string | undefined) => void;
   setStartDate: (value: string) => void;
   setEndDate: (value: string) => void;
   setOrder: (value: boolean) => void;
@@ -73,20 +71,15 @@ interface IFilters {
 
 const Filters: FC<IFilters> = ({
   setBranch,
-  //setCategory,
   setStartDate,
   setEndDate,
-  setOrder,
   date,
 }) => {
-  const { data: branches, isLoading: isLoadingBranches } = useSWR<any[]>(
+  const { data: branches, isLoading: isLoadingBranches } = useSWR<Branch[]>(
     'api/branches',
     { fetcher }
   );
-  /* const { data: categories, isLoading: isLoadingCategories } = useSWR<any[]>(
-    'api/categories',
-    { fetcher }
-  ); */
+
   return (
     <Card className="h-full">
       <CardBody>
@@ -114,10 +107,10 @@ const Filters: FC<IFilters> = ({
                 setBranch(e.target.value == '0' ? undefined : e.target.value)
               }
             >
-              {[null].concat(branches ?? []).map((item: any) =>
+              {[null, ...(branches ?? [])].map((item: Branch | null) =>
                 item ? (
                   <SelectItem key={item.id} value={item.id}>
-                    {`${item.address_line_1}, ${item.city}, ${item.state}, ${item.zip}`}
+                    {`${item.address_line_1}, ${item.city}, ${item.municipalty}, ${item.zip}`}
                   </SelectItem>
                 ) : (
                   <SelectItem key={0} value={0}>
@@ -127,30 +120,6 @@ const Filters: FC<IFilters> = ({
               )}
             </Select>
           )}
-          {/* {isLoadingCategories ? (
-            <div className="flex justify-center w-full">
-              <Spinner />
-            </div>
-          ) : (
-            <Select
-              label="Categoría"
-              onChange={(e) =>
-                setCategory(e.target.value == '0' ? undefined : e.target.value)
-              }
-            >
-              {[null].concat(categories ?? []).map((item: any) =>
-                item ? (
-                  <SelectItem key={item.id} value={item.id}>
-                    {item.name}
-                  </SelectItem>
-                ) : (
-                  <SelectItem key={0} value={0}>
-                    Todas
-                  </SelectItem>
-                )
-              )}
-            </Select>
-          )} */}
         </div>
       </CardBody>
     </Card>
@@ -179,7 +148,6 @@ const head = () => {
 };
 
 interface IBody {
-  //category: string | undefined;
   branch: string | undefined;
   startDate: string;
   endDate: string;
@@ -187,7 +155,6 @@ interface IBody {
 }
 
 const Body: FC<IBody> = ({
-  //category,
   branch,
   endDate,
   order,
@@ -197,7 +164,6 @@ const Body: FC<IBody> = ({
   useEffect(() => {
     axios
       .post<any>('api/buysMore', {
-        //categoryFilter: category ? formatString(category) : null,
         branchFilter: branch ? formatString(branch) : null,
         date_start: formatString(startDate),
         date_end: endDate ? formatString(endDate) : null,
@@ -210,7 +176,6 @@ const Body: FC<IBody> = ({
       })
       .catch((err) => console.log(err));
   }, [
-    //category,
     branch,
     endDate,
     order,
@@ -220,7 +185,7 @@ const Body: FC<IBody> = ({
   return (
     <Card className="h-full">
       <CardBody>
-        <Table>
+        <Table aria-label="Clientes con más compras" >
           <TableHeader>
             <TableColumn>Nombre Cliente</TableColumn>
             <TableColumn>Teléfono</TableColumn>
@@ -250,13 +215,3 @@ const Body: FC<IBody> = ({
     </Card>
   );
 };
-
-interface ClientsBuysMore {
-  first_name: string;
-  last_name: string;
-  client_phone: string;
-  client_email: string;
-  quantityOrders: number;
-  quantityProducts: number;
-  totalSpent: number
-}
