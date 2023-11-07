@@ -21,10 +21,11 @@ import {
 } from '@nextui-org/react';
 import { fetcher } from '@/utils/fetcher';
 import { formatString } from '@/utils/formatString';
+import { Restock } from '@/interfaces/reports.interface';
+import { Branch } from '@/interfaces/branch.interface';
 
 export default function Home() {
   const [branch, setBranch] = useState<string>();
-  const [order, setOrder] = useState(true);
   return (
     <>
       <Report
@@ -41,7 +42,7 @@ interface IFilters {
 }
 
 const Filters: FC<IFilters> = ({ setBranch }) => {
-  const { data: branches, isLoading: isLoadingBranches } = useSWR<any[]>(
+  const { data: branches, isLoading: isLoadingBranches } = useSWR<Branch[]>(
     'api/branches',
     { fetcher }
   );
@@ -60,10 +61,10 @@ const Filters: FC<IFilters> = ({ setBranch }) => {
                 setBranch(e.target.value == '0' ? undefined : e.target.value)
               }
             >
-              {[null].concat(branches ?? []).map((item: any) =>
+              {[null, ...(branches ?? [])].map((item: Branch | null) =>
                 item ? (
                   <SelectItem key={item.id} value={item.id}>
-                    {`${item.address_line_1}, ${item.city}, ${item.state}, ${item.zip}`}
+                    {`${item.address_line_1}, ${item.city}, ${item.municipalty}, ${item.zip}`}
                   </SelectItem>
                 ) : (
                   <SelectItem key={0} value={0}>
@@ -128,7 +129,7 @@ const Body: FC<IBody> = ({ branch }) => {
   return (
     <Card className="h-full">
       <CardBody>
-        <Table>
+        <Table aria-label="Restock de Productos" >
           <TableHeader>
             <TableColumn>Producto</TableColumn>
             <TableColumn>Categoría</TableColumn>
@@ -141,7 +142,7 @@ const Body: FC<IBody> = ({ branch }) => {
               'No hay productos con los parámetros de búsqueda seleccionados'
             }
           >
-            {data.map((item: any) => (
+            {data.map((item: Restock) => (
               <TableRow key={item.product_name}>
                 <TableCell>{item.product_name}</TableCell>
                 <TableCell>{item.product_category}</TableCell>

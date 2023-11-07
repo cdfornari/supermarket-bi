@@ -21,6 +21,9 @@ import {
 } from '@nextui-org/react';
 import { fetcher } from '@/utils/fetcher';
 import { formatString } from '@/utils/formatString';
+import { PopularProducts } from '@/interfaces/reports.interface';
+import { Branch } from '@/interfaces/branch.interface';
+import { Category } from '@/interfaces/category.interface';
 
 export default function Home() {
   const [branch, setBranch] = useState<string>();
@@ -76,14 +79,13 @@ const Filters: FC<IFilters> = ({
   setCategory,
   setStartDate,
   setEndDate,
-  setOrder,
   date,
 }) => {
-  const { data: branches, isLoading: isLoadingBranches } = useSWR<any[]>(
+  const { data: branches, isLoading: isLoadingBranches } = useSWR<Branch[]>(
     'api/branches',
     { fetcher }
   );
-  const { data: categories, isLoading: isLoadingCategories } = useSWR<any[]>(
+  const { data: categories, isLoading: isLoadingCategories } = useSWR<Category[]>(
     'api/categories',
     { fetcher }
   );
@@ -114,10 +116,10 @@ const Filters: FC<IFilters> = ({
                 setBranch(e.target.value == '0' ? undefined : e.target.value)
               }
             >
-              {[null].concat(branches ?? []).map((item: any) =>
+              {[null, ...(branches ?? [])].map((item: Branch | null) =>
                 item ? (
                   <SelectItem key={item.id} value={item.id}>
-                    {`${item.address_line_1}, ${item.city}, ${item.state}, ${item.zip}`}
+                    {`${item.address_line_1}, ${item.city}, ${item.municipalty}, ${item.zip}`}
                   </SelectItem>
                 ) : (
                   <SelectItem key={0} value={0}>
@@ -138,7 +140,7 @@ const Filters: FC<IFilters> = ({
                 setCategory(e.target.value == '0' ? undefined : e.target.value)
               }
             >
-              {[null].concat(categories ?? []).map((item: any) =>
+              {[null, ...(categories ?? [])].map((item: Category | null) =>
                 item ? (
                   <SelectItem key={item.id} value={item.id}>
                     {item.name}
@@ -208,7 +210,7 @@ const Body: FC<IBody> = ({ category, branch, endDate, order, startDate }) => {
   return (
     <Card className="h-full">
       <CardBody>
-        <Table>
+        <Table aria-label= "Productos Populares" >
           <TableHeader>
             <TableColumn>Producto</TableColumn>
             <TableColumn>Categoría</TableColumn>
@@ -220,7 +222,7 @@ const Body: FC<IBody> = ({ category, branch, endDate, order, startDate }) => {
               'No hay ventas con los parámetros de búsqueda seleccionados'
             }
           >
-            {data.map((item: any) => (
+            {data.map((item: PopularProducts, i: number) => (
               <TableRow key={item.product_name}>
                 <TableCell>{item.product_name}</TableCell>
                 <TableCell>{item.product_category}</TableCell>

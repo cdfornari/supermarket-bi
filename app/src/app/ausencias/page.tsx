@@ -8,7 +8,6 @@ import {
   Card,
   CardBody,
   CardHeader,
-  Checkbox,
   Image,
   Input,
   Select,
@@ -23,6 +22,9 @@ import {
 } from '@nextui-org/react';
 import { fetcher } from '@/utils/fetcher';
 import { formatString } from '@/utils/formatString';
+import { MoreAbsences } from '@/interfaces/reports.interface';
+import { Branch } from '@/interfaces/branch.interface';
+import { Rol } from '@/interfaces/rol.interface';
 
 export default function Home() {
   const [branch, setBranch] = useState<string>();
@@ -84,16 +86,15 @@ const Filters: FC<IFilters> = ({
   setRol,
   setStartDate,
   setEndDate,
-  setOrder,
   date,
   setActive,
   active,
 }) => {
-  const { data: branches, isLoading: isLoadingBranches } = useSWR<any[]>(
+  const { data: branches, isLoading: isLoadingBranches } = useSWR<Branch[]>(
     'api/branches',
     { fetcher }
   );
-  const { data: roles, isLoading: isLoadingRoles } = useSWR<any[]>(
+  const { data: roles, isLoading: isLoadingRoles } = useSWR<Rol[]>(
     'api/roles',
     { fetcher }
   );
@@ -143,10 +144,10 @@ const Filters: FC<IFilters> = ({
                 setBranch(e.target.value == '0' ? undefined : e.target.value)
               }
             >
-              {[null].concat(branches ?? []).map((item: any) =>
+              {[null, ...(branches ?? [])].map((item: Branch | null) =>
                 item ? (
                   <SelectItem key={item.id} value={item.id}>
-                    {`${item.address_line_1}, ${item.city}, ${item.state}, ${item.zip}`}
+                    {`${item.address_line_1}, ${item.city}, ${item.municipalty}, ${item.zip}`}
                   </SelectItem>
                 ) : (
                   <SelectItem key={0} value={0}>
@@ -167,7 +168,7 @@ const Filters: FC<IFilters> = ({
                 setRol(e.target.value == '0' ? undefined : e.target.value)
               }
             >
-              {[null].concat(roles ?? []).map((item: any) =>
+              {[null, ...(roles ?? [])].map((item: Rol | null) =>
                 item ? (
                   <SelectItem key={item.id} value={item.id}>
                     {item.description}
@@ -246,7 +247,7 @@ const Body: FC<IBody> = ({
   return (
     <Card className="h-full">
       <CardBody>
-        <Table>
+        <Table aria-label="Ausencias de empleados" >
           <TableHeader>
             <TableColumn>Nombre del empleado</TableColumn>
             <TableColumn>Rol</TableColumn>
@@ -261,7 +262,7 @@ const Body: FC<IBody> = ({
           >
             {data.map((item: MoreAbsences, i: number) => (
               <TableRow key={i}>
-                <TableCell>{item.first_name + ' ' +item.last_name}</TableCell>
+                <TableCell>{item.first_name + ' ' + item.last_name}</TableCell>
                 <TableCell>{item.employee_rol}</TableCell>
                 <TableCell>{item.isActive}</TableCell>
                 <TableCell>{item.branch_name}</TableCell>
@@ -274,12 +275,3 @@ const Body: FC<IBody> = ({
     </Card>
   );
 };
-
-interface MoreAbsences {
-  first_name: string;
-  last_name: string;
-  employee_rol: string;
-  isActive: string;
-  branch_name: string;
-  quantity: number;
-}
