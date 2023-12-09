@@ -8,7 +8,8 @@
     "db": "cd database && docker-compose up -d && cd ..",
     "dbseed": "cd database && docker-compose exec db psql -U postgres -d supermarket -f seed.sql && cd ..",
     "dropdb": "cd database && docker-compose down -v && cd ..",
-    "resetdb": "cd database && docker-compose down -v && docker-compose up -d && cd .."
+    "resetdb": "cd database && docker-compose down -v && docker-compose up -d && cd ..",
+    "dmseed": "cd database && docker-compose exec db psql -U postgres -d supermarket -f dmseed.sql && cd .."
   },
   "author": "Dream Team",
   "license": "ISC"
