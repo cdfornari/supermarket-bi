@@ -1,6 +1,6 @@
 # Supermarket - Reports
 
-Proyecto #1 para Tópicos Especiales de Gestión de Datos, hecho por:
+Proyecto #1 y #2 para Tópicos Especiales de Gestión de Datos, hecho por:
 - [Carlos Fornari](https://github.com/cdfornari)
 - [Alejandro Molina](https://github.com/Alejo-FM)
 - [Sandro Portanova](https://github.com/Sspa1)
@@ -31,17 +31,12 @@ Proyecto #1 para Tópicos Especiales de Gestión de Datos, hecho por:
   cd app && npm install
 ```
 
-### 4. From this step you need to have docker installed. If you don't have it, you can install it from [here](https://docs.docker.com/get-docker/). This step is to run the database.
+### 4. From this step you need to have docker installed. If you don't have it, you can install it from [here](https://docs.docker.com/get-docker/). This step is to run the database and load the seed.
 ```bash
   npm run db
 ```
 
-### 5. Run the seed to populate the database
-```bash
-  npm run dbseed
-```
-
-### 6. Run the client.
+### 5. Run the client.
 ```bash
   npm start
 ```
@@ -58,3 +53,17 @@ Proyecto #1 para Tópicos Especiales de Gestión de Datos, hecho por:
   npm run dbreset
 ```
 
+## Information about the second project
+
+All references to the second project are in the `datamart` folder. Where you can find:
+- The `datamart.sql` file, which contains the queries to create the datamart.
+- The `dmseed.sql` file, which contains the seed to load the datamart.
+- A ETL folder with the scripts to load the datamart using pentaho.
+- A Power BI folder with the report and the data model.
+
+Note: The dimension and fact tables are created when the database is created
+
+### Seed for the dimensional database
+````bash
+  npm run dmseed
+```
